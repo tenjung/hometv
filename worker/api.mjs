@@ -1,5 +1,5 @@
 import { seeds } from '../shared/seeds.mjs';
-import { SOLO_PAGE } from '../shared/playback.mjs';
+import { SOLO_PAGE, getSbsChannel } from '../shared/playback.mjs';
 
 const encoder = new TextEncoder();
 const COOKIE = 'hometv_session';
@@ -54,7 +54,7 @@ export function safeUrl(value) {
 export function validateChannel(input) {
   if(!input||typeof input!=='object')fail('등록할 내용을 확인해 주세요.');
   if(!['live','vod'].includes(input.category)||!['external','hls','mp4','sbs-live'].includes(input.kind))fail('분류와 재생 방식을 선택해 주세요.');
-  if(input.kind==='sbs-live'&&(input.url!==SOLO_PAGE||input.category!=='live'))fail('SBS Plus 바로 재생은 지정된 실시간 채널 주소를 사용해 주세요.');
+  if(input.kind==='sbs-live'&&((input.url!==SOLO_PAGE&&!getSbsChannel(input))||input.category!=='live'))fail('SBS 바로 재생은 공식 목록의 실시간 채널 주소를 사용해 주세요.');
   if(input.kind!=='external'&&input.permission!==true)fail('내부 재생이 허용된 영상인지 확인해 주세요.');
   const alternatives=input.alternatives??[];
   if(!Array.isArray(alternatives)||alternatives.length>3)fail('대체 경로는 3개까지 등록할 수 있습니다.');
