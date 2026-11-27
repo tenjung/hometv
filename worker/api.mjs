@@ -132,7 +132,7 @@ export async function handleApi(request,env) {
     await env.DB.prepare('DELETE FROM reports WHERE channel_id = ?').bind(match[1]).run();
     return json({ok:true});
   }
-  if(path.startsWith('/api/admin/iptv')){const input=(method==='POST'&&!path.endsWith('/refresh'))||method==='PUT'?await body(request,2_000_000):undefined;const result=await handleIptvAdmin(env.DB,path,method,input);if(result)return json(result,method==='POST'&&!path.endsWith('/refresh')?201:200);}
+  if(path.startsWith('/api/admin/iptv')){const plain=/\/(refresh|check)$/.test(path);const input=method==='POST'||method==='PUT'?await body(request,2_000_000):undefined;const result=await handleIptvAdmin(env.DB,path,method,input,{fetcher:env.IPTV_FETCH||fetch});if(result)return json(result,method==='POST'&&!plain?201:200);}
   if(path==='/api/admin/reports'&&method==='GET') {
     const {results}=await env.DB.prepare('SELECT id,channel_id AS "channelId",reason,created_at AS "createdAt" FROM reports ORDER BY created_at DESC LIMIT 100').all();
     return json({reports:results});

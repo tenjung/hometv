@@ -93,7 +93,44 @@ async function refreshEpg(db,sourceId,meta,channels){
   return epg;
 }
 
-const publicMeta=({id,name,type,channelCount,fetchedAt,error,epgAt,epgError,hasEpg,hiddenGroups=[],groups=[]})=>({id,name,type,channelCount,fetchedAt,error,epgAt,epgError,hasEpg,hiddenGroups,groups});
+const publicMeta=({id,name,type,channelCount,fetchedAt,error,epgAt,epgError,hasEpg,hiddenGroups=[],groups=[],heldCount=0,checkedAt})=>({id,name,type,channelCount,fetchedAt,error,epgAt,epgError,hasEpg,hiddenGroups,groups,heldCount,checkedAt});
+
+// 재생 확인과 '보류'. 확인에 실패한 채널은 보류로 옮겨 가족 화면에서 빼 두고, 관리자가 다시 확인하거나 직접 풀 수 있다.
+// 확인은 재생 목록(m3u8) 첫 부분이나 영상 응답 형식만 본다. 영상 데이터를 중계하거나 저장하지 않는다.
+const CHECK_BATCH=40,CHECK_PARALLEL=10,CHECK_TIMEOUT=7000;
+const holdKey=id=>`iptv_hold_${id}`;
+async function holds(db,id){return (await get(db,holdKey(id)))||{held:{},keep:[]};}
+const MEDIA_TYPE=/mpegurl|video\/|audio\/|application\/(octet-stream|dash\+xml|vnd\.apple)|binary\/octet/i;
+export async function probeStream(url,{fetcher=fetch,timeout=CHECK_TIMEOUT}={}){
+  let target;try{target=assertPublicUrl(url);}catch(e){return {ok:false,reason:e.message};}
+  for(let hop=0;hop<5;hop++){
+    let response;
+    try{response=await fetcher(target.href,{redirect:'manual',signal:AbortSignal.timeout(timeout),headers:{'User-Agent':'Mozilla/5.0 (HomeTV stream check)','Accept':'*/*'}});}
+    catch(e){return {ok:false,reason:e?.name==='TimeoutError'?'응답 없음(시간 초과)':'연결 실패'};}
+    const location=response.headers.get('location');
+    if(response.status>=300&&response.status<400&&location){try{await response.body?.cancel();}catch{}try{target=assertPublicUrl(new URL(location,target).href);}catch(e){return {ok:false,reason:e.message};}continue;}
+    if(!response.ok){try{await response.body?.cancel();}catch{}return {ok:false,reason:`응답 ${response.status}`};}
+    const type=response.headers.get('content-type')||'';
+    let head='';
+    try{const reader=response.body?.getReader();if(reader){const {value}=await reader.read();head=value?new TextDecoder().decode(value.slice(0,4096)):'';await reader.cancel().catch(()=>{});}}catch{}
+    if(/^\s*#EXTM3U/.test(head)||/<MPD\b/.test(head))return {ok:true};
+    if(MEDIA_TYPE.test(type)&&!/^\s*</.test(head))return {ok:true};
+    return {ok:false,reason:/text\/html/i.test(type)||/^\s*</.test(head)?'영상이 아닌 웹페이지 응답':'재생 목록 형식 아님'};
+  }
+  return {ok:false,reason:'리디렉션이 너무 많음'};
+}
+async function checkBatch(db,meta,offset,fetcher){
+  const channels=(await get(db,`iptv_list_${meta.id}`))||[];
+  const state=await holds(db,meta.id);const keep=new Set(state.keep||[]);
+  const batch=channels.slice(offset,offset+CHECK_BATCH);let i=0;
+  const work=async()=>{for(;;){const c=batch[i++];if(!c)return;if(keep.has(c.id))continue;const r=await probeStream(c.url,{fetcher});if(r.ok)delete state.held[c.id];else state.held[c.id]={reason:r.reason,at:Date.now()};}};
+  await Promise.all(Array.from({length:CHECK_PARALLEL},work));
+  const next=offset+batch.length<channels.length?offset+batch.length:null;
+  const ids=new Set(channels.map(c=>c.id));for(const id of Object.keys(state.held))if(!ids.has(id))delete state.held[id];
+  await put(db,holdKey(meta.id),state).run();
+  meta.heldCount=Object.keys(state.held).length;if(next===null)meta.checkedAt=Date.now();
+  return {next,total:channels.length,heldCount:meta.heldCount};
+}
 
 async function sources(db){return (await get(db,'iptv_sources'))||[];}
 async function saveSources(db,list){await put(db,'iptv_sources',list).run();}
@@ -124,7 +161,7 @@ async function seedDefaults(db){
 export async function familyIptv(db,{defaults=true}={}){
   if(defaults)await seedDefaults(db);
   const list=await sources(db),out=[];
-  for(const meta of list){const hidden=new Set(meta.hiddenGroups||[]);const channels=((await get(db,`iptv_list_${meta.id}`))||[]).filter(c=>!hidden.has(c.group||'기타'));out.push({...publicMeta(meta),channelCount:channels.length,channels});}
+  for(const meta of list){const hidden=new Set(meta.hiddenGroups||[]);const held=(await holds(db,meta.id)).held;const channels=((await get(db,`iptv_list_${meta.id}`))||[]).filter(c=>!hidden.has(c.group||'기타')&&!held[c.id]);out.push({...publicMeta(meta),channelCount:channels.length,channels});}
   return {sources:out};
 }
 
@@ -142,7 +179,7 @@ export async function familyEpg(db,sourceId,ids){
   return {at:epg?.at||0,programs};
 }
 
-export async function handleIptvAdmin(db,path,method,input){
+export async function handleIptvAdmin(db,path,method,input,{fetcher=fetch}={}){
   const list=await sources(db);
   if(path==='/api/admin/iptv'&&method==='GET')return {sources:list.map(m=>({...publicMeta(m),config:{...m.source,text:m.source.text?`${m.source.text.split(/\r?\n/).length}줄`:undefined,password:m.source.password?'••••••':undefined}}))};
   if(path==='/api/admin/iptv'&&method==='POST'){
@@ -151,10 +188,26 @@ export async function handleIptvAdmin(db,path,method,input){
     await sync(db,meta);list.push(meta);await saveSources(db,list);
     return {source:publicMeta(meta)};
   }
-  const m=path.match(/^\/api\/admin\/iptv\/([a-z0-9-]+)(\/refresh)?$/);
+  const m=path.match(/^\/api\/admin\/iptv\/([a-z0-9-]+)(\/refresh|\/check|\/hold)?$/);
   const meta=m&&list.find(x=>x.id===m[1]);
   if(m&&!meta)fail('IPTV 소스를 찾을 수 없어요.',404);
-  if(m&&m[2]&&method==='POST'){
+  if(m&&m[2]==='/check'&&method==='POST'){
+    const offset=Number.isInteger(input?.offset)&&input.offset>=0?input.offset:0;
+    const r=await checkBatch(db,meta,offset,fetcher);await saveSources(db,list);return r;
+  }
+  if(m&&m[2]==='/hold'&&method==='GET'){
+    const channels=(await get(db,`iptv_list_${meta.id}`))||[];const state=await holds(db,meta.id);
+    return {held:channels.filter(c=>state.held[c.id]).map(c=>({id:c.id,name:c.name,group:c.group,url:c.url,...state.held[c.id]}))};
+  }
+  if(m&&m[2]==='/hold'&&method==='PUT'){
+    const id=typeof input?.channelId==='string'?input.channelId:'';const channels=(await get(db,`iptv_list_${meta.id}`))||[];
+    if(!channels.some(c=>c.id===id))fail('채널을 찾을 수 없어요.',404);
+    const state=await holds(db,meta.id);const keep=new Set(state.keep||[]);
+    if(input.held){state.held[id]={reason:'직접 보류',at:Date.now()};keep.delete(id);}else{delete state.held[id];keep.add(id);}
+    state.keep=[...keep];await put(db,holdKey(meta.id),state).run();
+    meta.heldCount=Object.keys(state.held).length;await saveSources(db,list);return {source:publicMeta(meta)};
+  }
+  if(m&&m[2]==='/refresh'&&method==='POST'){
     try{await sync(db,meta);}catch(e){meta.error=e.message;await saveSources(db,list);throw e;}
     await saveSources(db,list);return {source:publicMeta(meta)};
   }
@@ -164,7 +217,7 @@ export async function handleIptvAdmin(db,path,method,input){
     await saveSources(db,list);return {source:publicMeta(meta)};
   }
   if(m&&!m[2]&&method==='DELETE'){
-    await db.batch([db.prepare('DELETE FROM settings WHERE key = ?').bind(`iptv_list_${meta.id}`),db.prepare('DELETE FROM settings WHERE key = ?').bind(`iptv_epg_${meta.id}`)]);
+    await db.batch([db.prepare('DELETE FROM settings WHERE key = ?').bind(`iptv_list_${meta.id}`),db.prepare('DELETE FROM settings WHERE key = ?').bind(`iptv_epg_${meta.id}`),db.prepare('DELETE FROM settings WHERE key = ?').bind(holdKey(meta.id))]);
     await saveSources(db,list.filter(x=>x.id!==meta.id));return {ok:true};
   }
   return null;
