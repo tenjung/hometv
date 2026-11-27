@@ -1,4 +1,5 @@
 import {writeFile} from 'node:fs/promises';
+import {inspectOfficialPlayback} from '../shared/sbs-policy.mjs';
 const origin='https://www.sbs.co.kr';
 const response=await fetch(origin+'/live',{signal:AbortSignal.timeout(20000)});
 if(!response.ok)throw new Error('SBS list request failed: '+response.status);
@@ -14,10 +15,10 @@ for(let i=0;i<list.length;i+=4){
   records.push(...await Promise.all(list.slice(i,i+4).map(async channel=>{
     const route=channel.group==='24tv'?'binge-watch/channel':'channel';
     const endpoint=`https://apis.sbs.co.kr/play-api/1.0/onair/${route}/${channel.id}?v_type=2&platform=pcweb&protocol=hls&ssl=Y&rscuse=&jwt-token=&sbsmain=`;
-    let direct=false,reason='접속 상태 확인 필요';
-    try{const r=await fetch(endpoint,{signal:AbortSignal.timeout(15000)});if(r.ok){const {onair:o}=await r.json();if(o?.info?.channelid===channel.id){const media=[o.source?.mediasource,...(o.source?.mediasourcelist||[])].filter(Boolean);direct=o.info.onair_yn==='Y'&&o.info.required_login!=='Y'&&media.some(m=>m.required_login==='N'&&m.required_payment==='N'&&m.mediaurl?.startsWith('https://'));reason=direct?'공개 재생 지원':o.info.onair_yn!=='Y'?'방송사 제공 제한':'공식 로그인·이용 조건 확인';}}}catch{}
-    return {...channel,url:`${origin}/live/${channel.id}`,direct,reason};
+    let direct=false,reason='접속 상태 확인 필요',mode='official',previewSeconds=0;
+    try{const r=await fetch(endpoint,{signal:AbortSignal.timeout(15000)});if(r.ok){const {onair}=await r.json();const policy=inspectOfficialPlayback(onair,channel.id);direct=true;mode=policy.mode;previewSeconds=policy.previewSeconds;reason=mode==='preview'?`공식 ${previewSeconds}초 미리보기`:'공개 재생 지원';}}catch(error){reason=error.message?.includes('로그인')?'공식 로그인·이용 조건 확인':'방송사 제공 제한';}
+    return {...channel,url:`${origin}/live/${channel.id}`,direct,mode,previewSeconds,reason};
   })));
 }
 await writeFile('shared/sbs-catalog.mjs','// Extracted from the official SBS channel list. No media URLs or tokens are stored.\nexport const sbsCatalog = '+JSON.stringify(records,null,2)+';\n');
-console.log(JSON.stringify({total:records.length,tv:records.filter(c=>c.group==='tv').length,continuous:records.filter(c=>c.group==='24tv').length,radio:records.filter(c=>c.group==='radio').length,direct:records.filter(c=>c.direct).map(c=>c.name),official:records.filter(c=>!c.direct).map(c=>c.name)}));
+console.log(JSON.stringify({total:records.length,full:records.filter(c=>c.mode==='full').map(c=>c.name),preview:records.filter(c=>c.mode==='preview').map(c=>c.name),official:records.filter(c=>!c.direct).map(c=>c.name)}));

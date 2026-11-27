@@ -4,3 +4,4 @@ import type {SbsCatalogEntry} from './sbs-catalog.mjs';
 export function getSbsChannel(channel:{url:string}):SbsCatalogEntry|undefined;
 export function validateSbsStream(value: string,expected?:{channel:string;stream:string}): string;
 export function resolvePlaybackSource(channel:{kind:string;url:string},options?:{fetcher?:typeof fetch;signal?:AbortSignal}):Promise<string>;
+export function resolvePlayback(channel:{kind:string;url:string},options?:{fetcher?:typeof fetch;signal?:AbortSignal}):Promise<{url:string;previewSeconds:number;previewKey?:string}>;
