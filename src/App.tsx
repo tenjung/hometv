@@ -7,8 +7,9 @@ import {Manage} from './Manage';
 import {IptvPage,iptvChannels,type IptvSource} from './iptv';
 import {getSbsChannel,getOfficialChannel} from '../shared/playback.mjs';
 
-type Layer={type:'watch';id:string}|{type:'help'}|{type:'manage'}|{type:'admin'}|null;
-const navs:{id:View;name:string;icon:typeof Home}[]=[{id:'home',name:'홈',icon:Home},{id:'live',name:'실시간 TV',icon:Signal},{id:'iptv',name:'IPTV',icon:Tv},{id:'external',name:'외부 TV',icon:ArrowUpRight},{id:'vod',name:'드라마 · 예능',icon:LayoutGrid},{id:'favorites',name:'즐겨찾기',icon:Heart},{id:'recent',name:'최근 이용',icon:Clock3}];
+type Layer={type:'watch';id:string}|{type:'help'}|{type:'manage'}|{type:'admin'}|{type:'settings'}|null;
+// 왼쪽 메뉴(유튜브 TV식). 평소엔 아이콘만, 메뉴에 초점이 가면 이름과 함께 펼쳐진다.
+const navs:{id:View;name:string;icon:typeof Home}[]=[{id:'search',name:'검색',icon:Search},{id:'home',name:'홈',icon:Home},{id:'live',name:'실시간 TV',icon:Signal},{id:'iptv',name:'IPTV',icon:Tv},{id:'external',name:'외부 TV',icon:ArrowUpRight},{id:'vod',name:'다시보기',icon:LayoutGrid},{id:'favorites',name:'즐겨찾기',icon:Heart}];
 
 function Brand(){return <div className="brand"><span className="brand-icon"><Tv size={23} strokeWidth={2.4}/></span><span>집<span className="brand-tv">TV</span></span></div>}
 
@@ -105,11 +106,14 @@ export default function App(){
  const visible=channels.filter(c=>c.visible);
  const allIptv=useMemo(()=>iptvChannels(iptvSources),[iptvSources]);
  const everything=useMemo(()=>[...channels.filter(c=>c.visible),...allIptv],[channels,allIptv]);
- const filtered=useMemo(()=>(query||view==='favorites'||view==='recent'?everything:visible).filter(c=>(view==='home'||view==='live'&&c.category==='live'&&!c.group||view==='vod'&&c.category==='vod'&&!c.group||view==='external'&&c.kind==='external'||view==='favorites'&&favorites.includes(c.id)||view==='recent'&&recent.includes(c.id))&&`${c.title} ${c.subtitle}`.toLowerCase().includes(query.toLowerCase())&&(view!=='live'||liveGroup==='all'||(liveGroup==='custom'?!getOfficialChannel(c):liveGroup==='kbs'?getOfficialChannel(c)?.broadcaster==='KBS':getSbsChannel(c)?.group===liveGroup))).sort((a,b)=>view==='recent'?recent.indexOf(a.id)-recent.indexOf(b.id):a.order-b.order),[channels,everything,view,favorites,recent,query,liveGroup]);
- const [featured,setFeatured]=useState(''),[searchOpen,setSearchOpen]=useState(false);
- function navigate(next:View){setView(next);setQuery('');setSearchOpen(false);setLiveGroup('all');window.scrollTo({top:0,behavior:'smooth'});}
+ const filtered=useMemo(()=>(view==='search'?(query?everything:[]):view==='favorites'||view==='recent'?everything:visible).filter(c=>(view==='home'||view==='search'||view==='live'&&c.category==='live'&&!c.group||view==='vod'&&c.category==='vod'&&!c.group||view==='external'&&c.kind==='external'||view==='favorites'&&favorites.includes(c.id)||view==='recent'&&recent.includes(c.id))&&`${c.title} ${c.subtitle}`.toLowerCase().includes(query.toLowerCase())&&(view!=='live'||liveGroup==='all'||(liveGroup==='custom'?!getOfficialChannel(c):liveGroup==='kbs'?getOfficialChannel(c)?.broadcaster==='KBS':getSbsChannel(c)?.group===liveGroup))).sort((a,b)=>view==='recent'?recent.indexOf(a.id)-recent.indexOf(b.id):a.order-b.order),[channels,everything,view,favorites,recent,query,liveGroup]);
+ const [featured,setFeatured]=useState(''),[railOpen,setRailOpen]=useState(false);
+ function navigate(next:View){if(next===view)return;setView(next);if(next!=='search')setQuery('');setLiveGroup('all');window.scrollTo({top:0});}
+ // 메뉴에서 확인·▶: 오른쪽 내용의 첫 항목으로 초점을 옮긴다.
+ function enterContent(){setTimeout(()=>{const first=document.querySelector<HTMLElement>('#main-content input, #main-content .live-filters button.selected, #main-content .gtv-tile, #main-content button');first?.focus();},30);}
  const pick=(ids:string[])=>ids.map(id=>everything.find(c=>c.id===id)).filter((c):c is Channel=>!!c);
  const favoriteRow=pick(favorites),recentRow=pick(recent).slice(0,12);
+ const continueRow=pick([...favorites,...recent.filter(id=>!favorites.includes(id))]).slice(0,12);
  const directLiveRow=visible.filter(isDirectLive);
  const myLiveRow=visible.filter(c=>c.category==='live'&&!getOfficialChannel(c)&&!c.group);
  const externalRow=visible.filter(c=>c.kind==='external');
@@ -118,7 +122,7 @@ export default function App(){
  const vodRow=visible.filter(c=>c.category==='vod'&&!c.group);
  const homeDefault=favoriteRow[0]||visible.find(c=>c.id==='solo')||visible[0];
  const featuredChannel=visible.find(c=>c.id===featured)||homeDefault;
- const isHome=view==='home'&&!query;
+ const isHome=view==='home';
  function watch(id:string){open({type:'watch',id});}
  function tile(c:Channel,size:TileSize,program?:React.ReactNode){return <Tile key={c.id} channel={c} size={size} program={program} onOpen={()=>watch(c.id)} onFocus={()=>setFeatured(c.id)}/>;}
  function row(title:string,items:Channel[],size:TileSize='wide',more?:()=>void){
@@ -133,55 +137,39 @@ export default function App(){
  const time=clock.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Seoul'});
  if(!session)return <div className="boot"><Brand/>{initialError?<><p role="alert">{initialError}</p><button className="secondary" onClick={()=>location.reload()}>다시 불러오기</button></>:<LoaderCircle className="spin" size={28}/>}</div>;
  if(!session.authenticated)return <main className="login-page"><section className="login-story"><Brand/><div className="login-message"><span className="eyebrow">YOUR VERY OWN SCREEN</span><h2>오늘도, 집이<br/>가장 좋은<br/><span>영화관.</span></h2><p>좋아하는 방송과 이야기들을 한곳에.<br/>우리 가족만의 TV가 시작됩니다.</p><div className="login-perks"><span><Tv size={16}/>안드로이드 TV</span><span><Monitor size={16}/>PC</span><span><Heart size={16}/>우리 가족</span></div></div><div className="login-caption">조금 더 편안한 우리집의 저녁 · 집TV</div></section><section className="login-entry"><PinForm onSuccess={setSession}/><button className="login-admin" onClick={()=>open({type:'admin'})}><Settings size={15}/>관리자로 접속</button></section>{layer?.type==='admin'&&<Dialog title="관리자 접속" onClose={close}><PinForm admin onSuccess={s=>{setSession(s);close();}} onCancel={close}/></Dialog>}</main>;
- return <div className="gtv-shell">
- <header className="gtv-top">
-  <nav className="gtv-tabs" aria-label="주 메뉴">
-   {searchOpen||query
-    ?<label className="gtv-search"><Search size={20}/><input autoFocus aria-label="등록한 방송과 사이트 검색" placeholder="보고 싶은 방송 찾기" value={query} onChange={e=>setQuery(e.target.value)} onBlur={()=>{if(!query)setSearchOpen(false);}}/>{query&&<button aria-label="검색 지우기" onClick={()=>{setQuery('');setSearchOpen(false);}}><X size={16}/></button>}</label>
-    :<button className="gtv-tab" onClick={()=>setSearchOpen(true)}><Search size={20}/>검색</button>}
-   {navs.filter(n=>n.id!=='iptv'||iptvSources.length>0).map(({id,name})=><button key={id} className={'gtv-tab '+(view===id&&!query?'active':'')} onClick={()=>navigate(id)} aria-current={view===id&&!query?'page':undefined}>{name}</button>)}
-  </nav>
-  <div className="gtv-status">
-   <button className={'gtv-icon '+(tv?'on':'')} onClick={()=>{setTv(v=>!v);setToast(tv?'PC 화면으로 전환했어요.':'TV 모드로 전환했어요. 방향키로 이동해 보세요.');}} aria-pressed={tv} aria-label="TV 모드" title="TV 모드"><Tv size={22}/></button>
-   <button className="gtv-icon" onClick={()=>open({type:'help'})} aria-label="TV 이용 도움말" title="도움말"><ShieldCheck size={22}/></button>
-   <button className="gtv-icon" onClick={()=>open({type:session.admin?'manage':'admin'})} aria-label="링크 및 설정 관리" title="설정"><Settings size={22}/></button>
-   {session.admin&&<button className="gtv-icon" onClick={logout} aria-label="관리자 접속 종료" title="관리자 접속 종료"><LogOut size={21}/></button>}
-   <span className="gtv-avatar" aria-hidden="true">H</span>
-   <time>{time}</time>
-  </div>
- </header>
+ return <div className={'gtv-shell rail-layout'+(railOpen?' rail-open':'')}>
+ <nav className="rail" aria-label="주 메뉴" onFocus={()=>setRailOpen(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setRailOpen(false);}} onMouseEnter={()=>setRailOpen(true)} onMouseLeave={()=>{if(!(document.activeElement as HTMLElement)?.closest('.rail'))setRailOpen(false);}} onKeyDown={e=>{if(e.key==='ArrowRight'||e.key==='Enter'){const t=(e.target as HTMLElement).dataset.view;if(t==='settings')return;e.preventDefault();e.stopPropagation();enterContent();}}}>
+  <div className="rail-brand"><Brand/></div>
+  {navs.filter(n=>n.id!=='iptv'||iptvSources.length>0).map(({id,name,icon:Icon})=><button key={id} data-view={id} className={'rail-item'+(view===id?' active':'')} aria-current={view===id?'page':undefined} onFocus={()=>navigate(id)} onClick={()=>{navigate(id);enterContent();}}><Icon size={24}/><span>{name}</span></button>)}
+  <span className="rail-gap"/>
+  <button data-view="settings" className="rail-item" onClick={()=>open({type:'settings'})}><Settings size={24}/><span>설정</span></button>
+ </nav>
+ <div className="rail-dim" aria-hidden="true"/>
+ <div className="top-status">{session.admin&&<button className="gtv-icon" onClick={logout} aria-label="관리자 접속 종료" title="관리자 접속 종료"><LogOut size={20}/></button>}<time>{time}</time></div>
  <main className="gtv-main" id="main-content">
   {catalogError?<div className="empty-state"><Wifi/><h2>목록을 불러오지 못했어요</h2><p role="alert">{catalogError}</p><button className="secondary" onClick={load}>다시 시도</button></div>
   :loading&&channels.length===0?<div className="empty-state"><LoaderCircle className="spin"/><p>우리집 TV를 준비하고 있어요.</p></div>
   :isHome?<>
    {featuredChannel&&<Hero channel={featuredChannel}/>}
    <div className="gtv-rows">
-    {row('지금 바로 보는 LIVE',directLiveRow,'wide')}
-    {row('즐겨 찾는 채널',favoriteRow,'app',()=>navigate('favorites'))}
-    {row('최근 이용',recentRow,'app',()=>navigate('recent'))}
-    {row('우리집 채널',myLiveRow)}
-    {iptvSources.map(src=>row(src.name,allIptv.filter(c=>c.iptv?.sourceId===src.id).slice(0,20),'wide',()=>navigate('iptv')))}
-    {row('외부 TV · 방송사 사이트',externalRow.slice(0,16),'wide',()=>navigate('external'))}
-    {row('KBS 실시간 TV',kbsRow('tv'),'wide',()=>{navigate('live');setLiveGroup('kbs');})}
-    {row('SBS 실시간 TV',sbsRow('tv'),'wide',()=>{navigate('live');setLiveGroup('tv');})}
-    {row('하루 종일, 24시간 TV',sbsRow('24tv'),'wide',()=>{navigate('live');setLiveGroup('24tv');})}
-    {row('SBS 라디오',sbsRow('radio'))}
-    {row('KBS 라디오',kbsRow('radio'))}
-    {row('다시 만나는 이야기',vodRow,'wide',()=>navigate('vod'))}
+    {row('이어서 보기',continueRow,'wide')}
+    {row('지금 바로 LIVE',directLiveRow,'wide')}
+    {iptvSources.map(src=>row(src.name,allIptv.filter(c=>c.iptv?.sourceId===src.id).slice(0,16),'wide'))}
+    {row('외부 TV',externalRow.slice(0,12),'wide')}
    </div>
   </>
   :<>
-   <div className="gtv-page-head"><h1>{query?'검색 결과':navs.find(n=>n.id===view)?.name}</h1><p>{query?`“${query}” · ${filtered.length}개`:`${view==='iptv'?allIptv.length:filtered.length}개의 채널`}</p></div>
-   {view==='live'&&!query&&<div className="live-filters" role="group" aria-label="라이브 채널 분류">{[['all','전체'],['kbs','KBS'],['tv','SBS TV'],['24tv','24시간 TV'],['radio','라디오'],['custom','우리집 채널']].map(([id,label])=><button key={id} className={liveGroup===id?'selected':''} aria-pressed={liveGroup===id} onClick={()=>setLiveGroup(id)}>{label}</button>)}</div>}
-   {view==='external'&&!query?<div className="external-page"><p className="external-note">방송사 공식 사이트로 이동해서 봐요. 리모컨 <kbd>뒤로</kbd>로 집TV에 돌아올 수 있어요.</p>{[...EXTERNAL_GROUPS,...new Set(filtered.map(externalGroup))].filter((g,i,a)=>a.indexOf(g)===i).map(g=>{const items=filtered.filter(c=>externalGroup(c)===g);return items.length?<section className="gtv-row" key={g}><div className="gtv-row-head"><h2>{g}</h2></div><div className="gtv-grid">{items.map(c=>tile(c,'wide'))}</div></section>:null;})}</div>
-   :view==='iptv'&&!query?<IptvPage sources={iptvSources} render={(c,program)=>tile(c,'wide',program)}/>
+   <div className="gtv-page-head"><h1>{navs.find(n=>n.id===view)?.name||'최근 이용'}</h1>{view==='search'?<label className="gtv-search"><Search size={20}/><input aria-label="방송·채널 검색" placeholder="보고 싶은 방송 찾기" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button aria-label="검색 지우기" onClick={()=>setQuery('')}><X size={16}/></button>}</label>:<p>{`${view==='iptv'?allIptv.length:filtered.length}개의 채널`}</p>}{view==='search'&&query&&<p>{`“${query}” · ${filtered.length}개`}</p>}</div>
+   {view==='live'&&<div className="live-filters" role="group" aria-label="라이브 채널 분류">{[['all','전체'],['kbs','KBS'],['tv','SBS TV'],['24tv','24시간 TV'],['radio','라디오'],['custom','우리집 채널']].map(([id,label])=><button key={id} className={liveGroup===id?'selected':''} aria-pressed={liveGroup===id} onClick={()=>setLiveGroup(id)}>{label}</button>)}</div>}
+   {view==='external'?<div className="external-page"><p className="external-note">방송사 공식 사이트로 이동해서 봐요. 리모컨 <kbd>뒤로</kbd>로 집TV에 돌아올 수 있어요.</p>{[...EXTERNAL_GROUPS,...new Set(filtered.map(externalGroup))].filter((g,i,a)=>a.indexOf(g)===i).map(g=>{const items=filtered.filter(c=>externalGroup(c)===g);return items.length?<section className="gtv-row" key={g}><div className="gtv-row-head"><h2>{g}</h2></div><div className="gtv-grid">{items.map(c=>tile(c,'wide'))}</div></section>:null;})}</div>
+   :view==='iptv'?<IptvPage sources={iptvSources} render={(c,program)=>tile(c,'wide',program)}/>
    :filtered.length?<div className="gtv-grid">{filtered.map(c=>tile(c,'wide'))}</div>
-   :<div className="empty-state">{view==='favorites'?<Heart/>:view==='recent'?<Clock3/>:<Search/>}<h2>{query?'찾는 항목이 없어요':view==='favorites'?'좋아하는 방송을 담아보세요':view==='recent'?'아직 이용한 항목이 없어요':'등록된 항목이 없어요'}</h2><p>{query?'등록한 제목이나 설명으로 다시 검색해 주세요.':view==='favorites'?'시청 화면의 하트를 누르면 이곳에 모아드려요.':'홈에서 방송을 선택하거나 관리 화면에서 링크를 추가해 주세요.'}</p><button className="secondary" onClick={()=>navigate('home')}>홈으로</button></div>}
+   :<div className="empty-state">{view==='favorites'?<Heart/>:view==='recent'?<Clock3/>:<Search/>}<h2>{view==='search'&&!query?'채널 이름을 입력해 보세요':query?'찾는 항목이 없어요':view==='favorites'?'좋아하는 방송을 담아보세요':view==='recent'?'아직 이용한 항목이 없어요':'등록된 항목이 없어요'}</h2><p>{query?'등록한 제목이나 설명으로 다시 검색해 주세요.':view==='favorites'?'시청 화면의 하트를 누르면 이곳에 모아드려요.':'홈에서 방송을 선택하거나 관리 화면에서 링크를 추가해 주세요.'}</p><button className="secondary" onClick={()=>navigate('home')}>홈으로</button></div>}
   </>}
-  <footer className="gtv-footer"><span><kbd>↑↓←→</kbd> 이동</span><span><kbd>확인</kbd> 선택</span><span><kbd>뒤로</kbd> 돌아가기</span></footer>
- </main>
+   </main>
  {active&&<Dialog title={active.title} onClose={close} wide full><Watch key={active.id} channel={active} related={relatedFor(active)} listTitle={groupLabel(active)} onSwitch={switchChannel} favorite={favorites.includes(active.id)} onFavorite={()=>favorite(active.id)} onClose={close} onVisit={()=>markRecent(active.id)} onToast={setToast}/></Dialog>}
  {layer?.type==='help'&&<Dialog title="TV 이용 도움말" onClose={close} wide><div className="modal-heading"><div><span className="eyebrow">A LITTLE HELP</span><h2>TV에서도 편안하게</h2></div><button className="icon-button" onClick={close} aria-label="닫기"><X/></button></div><div className="help-content"><div className="help-intro"><ShieldCheck size={30}/><div><h3>인증 화면이 반복되거나 영상이 안 보인다면</h3><p>외부 사이트의 인증과 영상 재생은 별개예요. 아래 순서로 확인해 주세요.</p></div></div><div className="help-steps"><section><span>1</span><div><h3>TV 브라우저를 최신 상태로</h3><p>설치된 브라우저와 Android System WebView의 업데이트를 확인하세요. 기기에 따라 업데이트 항목이 다를 수 있어요.</p></div></section><section><span>2</span><div><h3>쿠키와 JavaScript 허용</h3><p>브라우저 설정에서 쿠키·JavaScript·사이트 저장소를 허용하세요. 인증 관련 콘텐츠가 차단되고 있지 않은지도 확인해 주세요.</p></div></section><section><span>3</span><div><h3>원본 사이트에서 직접 확인</h3><p>방송 상세의 ‘원본 사이트 열기’로 접속해 인증을 완료하세요. 인증이 반복되면 무한 새로고침 대신 다른 지원 브라우저로 시도해 보세요.</p></div></section><section><span>4</span><div><h3>다른 경로 또는 휴대폰으로</h3><p>등록된 대체 경로를 선택하거나 QR 코드를 휴대폰으로 스캔하세요. 휴대폰에서 인증해도 TV의 인증이 풀리지는 않아요.</p></div></section></div><div className="notice"><strong>알아두세요</strong><p>집TV는 외부 사이트의 봇 차단을 해제하거나 인증을 대신하지 않아요. ‘TV 재생 확인’은 관리자가 실제 기기에서 확인한 기록이며, 이후 사이트 상황에 따라 달라질 수 있어요.</p></div><div className="source-reference"><span>링크를 더 찾아보고 싶다면</span><button className="text-button" onClick={()=>external('https://wdwd16.com/bbs/ContentsList.php?idx=5')}>주소월드 무료드라마 목록 열기 <ExternalLink size={14}/></button><small>외부 링크 목록입니다. 각 사이트의 이용 조건을 확인한 뒤 관리 화면에 등록해 주세요.</small></div></div></Dialog>}
+ {layer?.type==='settings'&&<Dialog title="설정" onClose={close}><div className="modal-heading"><div><span className="eyebrow">SETTINGS</span><h2>설정</h2></div><button className="icon-button" onClick={close} aria-label="닫기"><X/></button></div><div className="settings-list"><button className="settings-item" autoFocus onClick={()=>{setTv(v=>!v);setToast(tv?'PC 화면으로 바꿨어요.':'TV 화면으로 바꿨어요.');}}><Tv size={22}/><span><strong>TV 화면 모드</strong><small>{tv?'켜짐 · 리모컨 방향키와 TV 크기에 맞춰요':'꺼짐 · PC·휴대폰 화면'}</small></span></button><button className="settings-item" onClick={()=>{setLayer({type:'help'});}}><ShieldCheck size={22}/><span><strong>TV 이용 도움말</strong><small>인증·재생 문제 해결</small></span></button><button className="settings-item" onClick={()=>setLayer({type:session.admin?'manage':'admin'})}><Settings size={22}/><span><strong>관리자 화면</strong><small>링크·IPTV·PIN 관리 (관리자 PIN)</small></span></button></div></Dialog>}
  {layer?.type==='admin'&&<Dialog title="관리자 접속" onClose={close}><PinForm admin onSuccess={s=>{setSession(s);setLayer({type:'manage'});}} onCancel={close}/></Dialog>}
  {layer?.type==='manage'&&session.admin&&<Dialog title="링크 및 설정 관리" onClose={close} wide><Manage channels={channels} onChange={load} onClose={close} onToast={setToast}/></Dialog>}
  {toast&&<div className="toast" role="status"><Check size={17}/>{toast}</div>}
