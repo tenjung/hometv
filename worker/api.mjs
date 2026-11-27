@@ -77,11 +77,11 @@ async function list(db,admin) {
 }
 export async function handleApi(request,env) {
  try {
-  if(!env.DB||!env.SESSION_SECRET||!env.FAMILY_PIN||!env.ADMIN_PIN)return json({error:'서버의 인증·저장소 설정이 필요합니다.'},503);
+  if(!env.DB||!env.SESSION_SECRET||!env.ADMIN_PIN)return json({error:'서버의 인증·저장소 설정이 필요합니다.'},503);
   const url=new URL(request.url), path=url.pathname, method=request.method;
   if(!['GET','POST','PUT','DELETE'].includes(method))return json({error:'지원하지 않는 요청입니다.'},405);
   if(method!=='GET'&&request.headers.get('Origin')!==url.origin)fail('다른 사이트에서 보낸 요청입니다. 새로고침 후 다시 시도해 주세요.',403);
-  if(path==='/api/session'&&method==='GET') {const s=await session(request,env);return json({authenticated:!!s,admin:s?.role==='admin'});}
+  if(path==='/api/session'&&method==='GET') {const s=await session(request,env);return json({authenticated:true,admin:s?.role==='admin'});}
   if(path==='/api/login'&&method==='POST') {
     const input=await body(request),role=input.role==='admin'?'admin':'family';
     const pin=text(input.pin,'PIN',32);
@@ -97,9 +97,10 @@ export async function handleApi(request,env) {
     return json({authenticated:true,admin:role==='admin'},200,{'Set-Cookie':await cookie(request,env,role)});
   }
   if(path==='/api/logout'&&method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${url.protocol==='https:'?'; Secure':''}`});
-  const s=await session(request,env);if(!s)fail('가족 PIN으로 접속해 주세요.',401);
+  // 가족 화면은 PIN 없이 연다(2026-11-27). 관리 기능만 관리자 PIN 세션이 필요하다.
+  const s=(await session(request,env))||{role:'family',nonce:'guest-'+await digest(request.headers.get('CF-Connecting-IP')||request.headers.get('X-Local-Client')||'unknown')};
   if(path==='/api/channels'&&method==='GET')return json({channels:await list(env.DB,s.role==='admin')});
-  if(path==='/api/iptv'&&method==='GET')return json(await familyIptv(env.DB));
+  if(path==='/api/iptv'&&method==='GET')return json(await familyIptv(env.DB,{defaults:env.IPTV_DEFAULTS!=='off'}));
   if(path==='/api/iptv/resolve'&&method==='GET')return json(await resolveStream(env.DB,text(url.searchParams.get('source')||'','소스',40),text(url.searchParams.get('id')||'','채널',80)));
   if(path==='/api/iptv/epg'&&method==='GET'){const source=text(url.searchParams.get('source')||'','소스',40);const ids=(url.searchParams.get('ids')||'').split(',').filter(Boolean);return json(await familyEpg(env.DB,source,ids));}
   if(path==='/api/reports'&&method==='POST') {

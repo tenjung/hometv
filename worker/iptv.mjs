@@ -107,8 +107,22 @@ async function sync(db,meta,{epg=true}={}){
   return channels;
 }
 
+// 기본 IPTV 소스: 처음 한 번 삼성 TV 플러스(대한민국)를 넣는다. 성공한 뒤에는 다시 넣지 않아서 관리자가 지우면 그대로 지워진다.
+const DEFAULT_IPTV_VERSION=1;
+async function seedDefaults(db){
+  if(Number((await get(db,'iptv_defaults'))||0)>=DEFAULT_IPTV_VERSION)return;
+  const list=await sources(db);
+  if(!list.some(m=>m.type==='samsung'&&m.source?.region==='kr')){
+    const meta={id:crypto.randomUUID().slice(0,8),source:{name:'삼성 TV 플러스',type:'samsung',region:'kr',epgUrl:''},name:'삼성 TV 플러스',type:'samsung'};
+    try{await sync(db,meta);}catch{return;} // 실패하면 다음 접속 때 다시 시도
+    list.push(meta);await saveSources(db,list);
+  }
+  await put(db,'iptv_defaults',DEFAULT_IPTV_VERSION).run();
+}
+
 // 가족: 모든 소스의 채널 목록
-export async function familyIptv(db){
+export async function familyIptv(db,{defaults=true}={}){
+  if(defaults)await seedDefaults(db);
   const list=await sources(db),out=[];
   for(const meta of list){const hidden=new Set(meta.hiddenGroups||[]);const channels=((await get(db,`iptv_list_${meta.id}`))||[]).filter(c=>!hidden.has(c.group||'기타'));out.push({...publicMeta(meta),channelCount:channels.length,channels});}
   return {sources:out};
