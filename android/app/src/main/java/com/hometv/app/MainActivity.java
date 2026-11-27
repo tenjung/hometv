@@ -306,7 +306,14 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+                // 집TV 웹이 #watch(시청 화면)로 바뀌면 툴바를 숨겨 전체화면으로 본다.
+                updateWatchMode(url);
+            }
+
+            @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                updateWatchMode(url);
                 if (!address.hasFocus()) address.setText(url);
                 pageEditing = false;
                 setNav(tv && !isHome(url) ? NAV_FOCUS : NAV_OFF);
@@ -342,7 +349,7 @@ public class MainActivity extends Activity {
             @Override
             public void onProgressChanged(WebView view, int p) {
                 progress.setProgress(p);
-                progress.setVisibility(p >= 100 ? View.INVISIBLE : View.VISIBLE);
+                if (toolbar.getVisibility() == View.VISIBLE) progress.setVisibility(p >= 100 ? View.INVISIBLE : View.VISIBLE);
                 if (p >= 70) injectNav();
             }
 
@@ -387,6 +394,22 @@ public class MainActivity extends Activity {
                 ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
                 : defaultUserAgent + (tv ? " HomeTVApp/1.1 AndroidTV" : " HomeTVApp/1.1");
         web.getSettings().setUserAgentString(ua);
+    }
+
+    // 집TV 시청 화면(#watch, #watch-panel)에서는 주소창·툴바·진행 막대를 숨긴다. 목록으로 돌아오면 다시 보인다.
+    private void updateWatchMode(String url) {
+        Uri u = Uri.parse(String.valueOf(url));
+        String fragment = u.getFragment();
+        boolean watching = isHome(String.valueOf(url)) && fragment != null && fragment.startsWith("watch");
+        int visibility = watching ? View.GONE : View.VISIBLE;
+        if (toolbar.getVisibility() == visibility) return;
+        toolbar.setVisibility(visibility);
+        progress.setVisibility(visibility);
+        if (watching) {
+            hideKeyboard();
+            web.requestFocus();
+            hideSystemBars();
+        }
     }
 
     private void exitFullscreen() {

@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {getSbsChannel} from '../shared/playback.mjs';
+import {getOfficialChannel} from '../shared/playback.mjs';
 import {createPortal} from 'react-dom';
 
 export async function api<T=Record<string,unknown>>(path:string,options:RequestInit={}):Promise<T>{
@@ -32,7 +32,9 @@ export function useRemoteNavigation(){
     const horizontal=e.key==='ArrowLeft'||e.key==='ArrowRight',positive=e.key==='ArrowRight'||e.key==='ArrowDown';
     let target:HTMLElement|null=null,best=Infinity;
     for(const el of elements){if(el===active)continue;const r=el.getBoundingClientRect();const dx=r.left+r.width/2-x,dy=r.top+r.height/2-y;const primary=horizontal?dx:dy,cross=Math.abs(horizontal?dy:dx);if((positive?primary:-primary)<4)continue;const aligned=horizontal?Math.min(rect.bottom,r.bottom)-Math.max(rect.top,r.top)>0:Math.min(rect.right,r.right)-Math.max(rect.left,r.left)>0;const score=Math.abs(primary)+(aligned?cross*.3:cross*3+500);if(score<best){best=score;target=el;}}
-    target?.focus({preventScroll:true});target?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+    target?.focus({preventScroll:true});
+    // 위쪽 메뉴로 올라가면 페이지 맨 위(홈 배너)까지 보여 준다.
+    if(target?.closest('.gtv-top'))window.scrollTo({top:0,behavior:'smooth'});else target?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
   }document.addEventListener('keydown',handle);return()=>document.removeEventListener('keydown',handle);},[]);
 }
 export function validHttps(value:string){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}}
@@ -40,9 +42,9 @@ export const external=(url:string)=>{if(validHttps(url))window.location.assign(u
 
 // 카드·목록에 붙는 재생 상태 표시. 앱 안에서 바로 나오는 실시간 채널은 모두 LIVE로 표시한다.
 export function playBadge(c:{category:string;kind:string;url:string;badge:string}):{text:string;tone:'live'|'preview'|'ext'|'plain'}|null{
-  const sbs=getSbsChannel(c);
+  const official=getOfficialChannel(c);
   if(c.category==='live'&&c.kind!=='external'){
-    if(sbs?.mode==='preview')return {text:`미리보기 ${sbs.previewSeconds}초`,tone:'preview'};
+    if(official?.mode==='preview')return {text:`미리보기 ${official.previewSeconds}초`,tone:'preview'};
     return {text:'LIVE',tone:'live'};
   }
   if(c.kind==='external')return {text:'외부 연결',tone:'ext'};

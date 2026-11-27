@@ -12,7 +12,7 @@ const server=http.createServer(async(req,res)=>{try {
   // Only the loopback API port accepts Vite's forwarded host for origin checks.
   const forwarded=!production&&['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)?req.headers['x-dev-original-host']:null;
   const url=`http://${forwarded||req.headers.host||'127.0.0.1:4318'}${req.url}`;
-  const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>16384){res.writeHead(413);res.end();return;}chunks.push(chunk);}
+  const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>2_100_000){res.writeHead(413);res.end();return;}chunks.push(chunk);}
   const request=new Request(url,{method:req.method,headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})});
   const response=production?await worker.fetch(request,env):await handleApi(request,env);
   res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
