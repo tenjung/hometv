@@ -88,7 +88,7 @@ export default function App(){
  const [clock,setClock]=useState(new Date());
  const [iptvSources,setIptvSources]=useState<IptvSource[]>([]);
  async function load(){setLoading(true);setCatalogError('');try{const data=await api<{channels:Channel[]}>('/channels');setChannels(data.channels);api<{sources:IptvSource[]}>('/iptv').then(d=>setIptvSources(d.sources)).catch(()=>{});}catch(e){setCatalogError((e as Error).message);}finally{setLoading(false);}}
- useEffect(()=>{api<Session>('/session').then(setSession).catch(e=>setInitialError(e.message));const timer=setInterval(()=>setClock(new Date()),30000);const expired=()=>{setSession({authenticated:false,admin:false});setChannels([]);setLayer(null);};window.addEventListener('session-expired',expired);return()=>{clearInterval(timer);window.removeEventListener('session-expired',expired);};},[]);
+ useEffect(()=>{api<Session>('/session').then(setSession).catch(e=>setInitialError(e.message));const timer=setInterval(()=>setClock(new Date()),30000);const expired=()=>{setSession({authenticated:true,admin:false});setLayer(null);};window.addEventListener('session-expired',expired);return()=>{clearInterval(timer);window.removeEventListener('session-expired',expired);};},[]);
  useEffect(()=>{if(session?.authenticated)void load();},[session?.authenticated,session?.admin]);
  useEffect(()=>{const tick=()=>{if(document.visibilityState==='visible'&&session?.authenticated)void load();};window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);return()=>{window.removeEventListener('focus',tick);document.removeEventListener('visibilitychange',tick);};},[session?.authenticated]);
  useEffect(()=>{document.documentElement.classList.toggle('tv-mode',tv);},[tv]);
@@ -123,7 +123,7 @@ export default function App(){
  // 시청 화면 오른쪽 목록: 같은 분류의 채널끼리 묶는다.
  function relatedFor(c:Channel){if(c.iptv){const {sourceId,group}=c.iptv;return allIptv.filter(x=>x.iptv?.sourceId===sourceId&&x.iptv.group===group);}const o=getOfficialChannel(c);return visible.filter(x=>{if(x.category!==c.category)return false;const p=getOfficialChannel(x);return o?p?.broadcaster===o.broadcaster&&p.group===o.group:!p;});}
  function switchChannel(id:string){history.replaceState(history.state,'','#watch');setLayer({type:'watch',id});}
- async function logout(){try{await api('/logout',{method:'POST',body:'{}'});setSession({authenticated:false,admin:false});setChannels([]);}catch(e){setToast((e as Error).message);}}
+ async function logout(){try{await api('/logout',{method:'POST',body:'{}'});setSession({authenticated:true,admin:false});setToast('관리자 접속을 마쳤어요.');}catch(e){setToast((e as Error).message);}}
  const active=layer?.type==='watch'?(channels.find(c=>c.id===layer.id)||allIptv.find(c=>c.id===layer.id)):null;
  const time=clock.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Seoul'});
  if(!session)return <div className="boot"><Brand/>{initialError?<><p role="alert">{initialError}</p><button className="secondary" onClick={()=>location.reload()}>다시 불러오기</button></>:<LoaderCircle className="spin" size={28}/>}</div>;
@@ -140,7 +140,7 @@ export default function App(){
    <button className={'gtv-icon '+(tv?'on':'')} onClick={()=>{setTv(v=>!v);setToast(tv?'PC 화면으로 전환했어요.':'TV 모드로 전환했어요. 방향키로 이동해 보세요.');}} aria-pressed={tv} aria-label="TV 모드" title="TV 모드"><Tv size={22}/></button>
    <button className="gtv-icon" onClick={()=>open({type:'help'})} aria-label="TV 이용 도움말" title="도움말"><ShieldCheck size={22}/></button>
    <button className="gtv-icon" onClick={()=>open({type:session.admin?'manage':'admin'})} aria-label="링크 및 설정 관리" title="설정"><Settings size={22}/></button>
-   <button className="gtv-icon" onClick={logout} aria-label="접속 종료" title="접속 종료"><LogOut size={21}/></button>
+   {session.admin&&<button className="gtv-icon" onClick={logout} aria-label="관리자 접속 종료" title="관리자 접속 종료"><LogOut size={21}/></button>}
    <span className="gtv-avatar" aria-hidden="true">H</span>
    <time>{time}</time>
   </div>
