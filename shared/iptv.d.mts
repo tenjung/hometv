@@ -1,0 +1,9 @@
+export type M3UChannel={name:string;url:string;logo:string;group:string;tvgId:string};
+export type Program={s:number;e:number;t:string;d:string};
+export function isStreamUrl(value:string):boolean;
+export function parseM3U(text:string,options?:{limit?:number}):{epgUrl:string;channels:M3UChannel[]};
+export function xtreamUrls(input:{server:string;username:string;password:string}):{m3u:string;epg:string};
+export function xmltvTime(value:string):number;
+export function parseXmltv(xml:string,options?:{ids?:string[];from?:number;to?:number}):{programs:Record<string,Program[]>;names:Record<string,string>};
+export function nowNext(list:Program[]|undefined,now?:number):{now:Program|null;next:Program|null;progress:number};
+export function iptvChannelId(sourceId:string,channel:{tvgId?:string;name?:string;url?:string;group?:string}):string;

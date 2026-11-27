@@ -1,5 +1,6 @@
 import { seeds } from '../shared/seeds.mjs';
-import { SOLO_PAGE, getSbsChannel } from '../shared/playback.mjs';
+import { SOLO_PAGE, getSbsChannel, getKbsChannel } from '../shared/playback.mjs';
+import { familyIptv, familyEpg, handleIptvAdmin, resolveStream } from './iptv.mjs';
 
 const encoder = new TextEncoder();
 const COOKIE = 'hometv_session';
@@ -39,11 +40,11 @@ async function cookie(request,env,role) {
   const signature=b64(await crypto.subtle.sign('HMAC',await key(env.SESSION_SECRET),encoder.encode(body)));
   return `${COOKIE}=${body}.${signature}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${new URL(request.url).protocol==='https:'?'; Secure':''}`;
 }
-async function body(request) {
+async function body(request,limit=16384) {
   if(!request.headers.get('Content-Type')?.startsWith('application/json'))fail('JSON 형식으로 요청해 주세요.',415);
   const reader=request.body?.getReader(); if(!reader)fail('요청 내용이 없습니다.');
   let size=0;const chunks=[];
-  for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>16384){await reader.cancel();fail('입력 내용이 너무 큽니다.',413);}chunks.push(value);}
+  for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit){await reader.cancel();fail('입력 내용이 너무 큽니다.',413);}chunks.push(value);}
   try {const all=new Uint8Array(size);let offset=0;for(const c of chunks){all.set(c,offset);offset+=c.length;}return JSON.parse(new TextDecoder().decode(all));}catch{fail('입력 형식을 확인해 주세요.');}
 }
 function text(value,name,max,required=true){if(typeof value!=='string'||value.length>max||(required&&!value.trim()))fail(`${name}을 확인해 주세요.`);return value.trim();}
@@ -53,16 +54,21 @@ export function safeUrl(value) {
 }
 export function validateChannel(input) {
   if(!input||typeof input!=='object')fail('등록할 내용을 확인해 주세요.');
-  if(!['live','vod'].includes(input.category)||!['external','hls','mp4','sbs-live'].includes(input.kind))fail('분류와 재생 방식을 선택해 주세요.');
+  if(!['live','vod'].includes(input.category)||!['external','hls','mp4','sbs-live','kbs-live'].includes(input.kind))fail('분류와 재생 방식을 선택해 주세요.');
   if(input.kind==='sbs-live'&&((input.url!==SOLO_PAGE&&!getSbsChannel(input))||input.category!=='live'))fail('SBS 바로 재생은 공식 목록의 실시간 채널 주소를 사용해 주세요.');
+  if(input.kind==='kbs-live'&&(!getKbsChannel(input)||input.category!=='live'))fail('KBS 바로 재생은 공식 목록의 실시간 채널 주소를 사용해 주세요.');
   if(input.kind!=='external'&&input.permission!==true)fail('내부 재생이 허용된 영상인지 확인해 주세요.');
   const alternatives=input.alternatives??[];
   if(!Array.isArray(alternatives)||alternatives.length>3)fail('대체 경로는 3개까지 등록할 수 있습니다.');
   return {title:text(input.title,'제목',100),subtitle:text(input.subtitle||'','짧은 설명',150,false),description:text(input.description||'','설명',1200,false),category:input.category,kind:input.kind,url:safeUrl(input.url),originalUrl:safeUrl(input.originalUrl||input.url),art:['solo','sbs','kbs','ebs','drama','sample','custom'].includes(input.art)?input.art:'custom',badge:text(input.badge||'','표시 문구',20,false),verified:input.verified===true,visible:input.visible!==false,order:Number.isFinite(input.order)?Math.max(0,Math.min(9999,Math.trunc(input.order))):100,permission:input.permission===true,alternatives:alternatives.map(a=>({title:text(a.title,'대체 경로 이름',50),url:safeUrl(a.url)}))};
 }
+// 초기 목록은 버전별로 한 번씩만 추가한다. 이미 추가된 뒤 관리자가 삭제한 항목은 다시 만들지 않는다.
+const CATALOG_VERSION=2;
 async function seed(db) {
-  if(await setting(db,'catalog_initialized'))return;
-  await db.batch([...seeds.map(c=>db.prepare('INSERT INTO channels (id,payload,revision,updated_at) VALUES (?,?,1,?) ON CONFLICT DO NOTHING').bind(c.id,JSON.stringify({...c,permission:c.kind!=='external'}),Date.now())),db.prepare("INSERT INTO settings (key,value) VALUES ('catalog_initialized','1') ON CONFLICT DO NOTHING")]);
+  const stored=Number(await setting(db,'catalog_version'))||(await setting(db,'catalog_initialized')?1:0);
+  if(stored>=CATALOG_VERSION)return;
+  const upsert="INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value";
+  await db.batch([...seeds.filter(c=>(c.since||1)>stored).map(({since,...c})=>db.prepare('INSERT INTO channels (id,payload,revision,updated_at) VALUES (?,?,1,?) ON CONFLICT DO NOTHING').bind(c.id,JSON.stringify({...c,permission:c.kind!=='external'}),Date.now())),db.prepare(upsert).bind('catalog_initialized','1'),db.prepare(upsert).bind('catalog_version',String(CATALOG_VERSION))]);
 }
 async function list(db,admin) {
   await seed(db);
@@ -93,6 +99,9 @@ export async function handleApi(request,env) {
   if(path==='/api/logout'&&method==='POST')return json({ok:true},200,{'Set-Cookie':`${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${url.protocol==='https:'?'; Secure':''}`});
   const s=await session(request,env);if(!s)fail('가족 PIN으로 접속해 주세요.',401);
   if(path==='/api/channels'&&method==='GET')return json({channels:await list(env.DB,s.role==='admin')});
+  if(path==='/api/iptv'&&method==='GET')return json(await familyIptv(env.DB));
+  if(path==='/api/iptv/resolve'&&method==='GET')return json(await resolveStream(env.DB,text(url.searchParams.get('source')||'','소스',40),text(url.searchParams.get('id')||'','채널',80)));
+  if(path==='/api/iptv/epg'&&method==='GET'){const source=text(url.searchParams.get('source')||'','소스',40);const ids=(url.searchParams.get('ids')||'').split(',').filter(Boolean);return json(await familyEpg(env.DB,source,ids));}
   if(path==='/api/reports'&&method==='POST') {
     const input=await body(request);const id=text(input.channelId,'항목',100);
     const channel=await env.DB.prepare('SELECT payload FROM channels WHERE id = ?').bind(id).first();
@@ -122,6 +131,7 @@ export async function handleApi(request,env) {
     await env.DB.prepare('DELETE FROM reports WHERE channel_id = ?').bind(match[1]).run();
     return json({ok:true});
   }
+  if(path.startsWith('/api/admin/iptv')){const input=(method==='POST'&&!path.endsWith('/refresh'))||method==='PUT'?await body(request,2_000_000):undefined;const result=await handleIptvAdmin(env.DB,path,method,input);if(result)return json(result,method==='POST'&&!path.endsWith('/refresh')?201:200);}
   if(path==='/api/admin/reports'&&method==='GET') {
     const {results}=await env.DB.prepare('SELECT id,channel_id AS "channelId",reason,created_at AS "createdAt" FROM reports ORDER BY created_at DESC LIMIT 100').all();
     return json({reports:results});
