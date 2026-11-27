@@ -60,10 +60,10 @@ export function validateChannel(input) {
   if(input.kind!=='external'&&input.permission!==true)fail('내부 재생이 허용된 영상인지 확인해 주세요.');
   const alternatives=input.alternatives??[];
   if(!Array.isArray(alternatives)||alternatives.length>3)fail('대체 경로는 3개까지 등록할 수 있습니다.');
-  return {title:text(input.title,'제목',100),subtitle:text(input.subtitle||'','짧은 설명',150,false),description:text(input.description||'','설명',1200,false),category:input.category,kind:input.kind,url:safeUrl(input.url),originalUrl:safeUrl(input.originalUrl||input.url),art:['solo','sbs','kbs','ebs','drama','sample','custom'].includes(input.art)?input.art:'custom',badge:text(input.badge||'','표시 문구',20,false),verified:input.verified===true,visible:input.visible!==false,order:Number.isFinite(input.order)?Math.max(0,Math.min(9999,Math.trunc(input.order))):100,permission:input.permission===true,alternatives:alternatives.map(a=>({title:text(a.title,'대체 경로 이름',50),url:safeUrl(a.url)}))};
+  return {title:text(input.title,'제목',100),subtitle:text(input.subtitle||'','짧은 설명',150,false),description:text(input.description||'','설명',1200,false),category:input.category,kind:input.kind,url:safeUrl(input.url),originalUrl:safeUrl(input.originalUrl||input.url),art:['solo','sbs','kbs','ebs','drama','sample','custom'].includes(input.art)?input.art:'custom',badge:text(input.badge||'','표시 문구',20,false),verified:input.verified===true,visible:input.visible!==false,order:Number.isFinite(input.order)?Math.max(0,Math.min(9999,Math.trunc(input.order))):100,permission:input.permission===true,group:text(input.group||'','외부 TV 분류',30,false),alternatives:alternatives.map(a=>({title:text(a.title,'대체 경로 이름',50),url:safeUrl(a.url)}))};
 }
 // 초기 목록은 버전별로 한 번씩만 추가한다. 이미 추가된 뒤 관리자가 삭제한 항목은 다시 만들지 않는다.
-const CATALOG_VERSION=2;
+const CATALOG_VERSION=3;
 async function seed(db) {
   const stored=Number(await setting(db,'catalog_version'))||(await setting(db,'catalog_initialized')?1:0);
   if(stored>=CATALOG_VERSION)return;

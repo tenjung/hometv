@@ -1,11 +1,13 @@
 // Initial catalog is seeded by the server, separately from schema migrations.
 import {sbsSeeds} from './sbs-seeds.mjs';
 import {kbsSeeds} from './kbs-seeds.mjs';
+import {externalSeeds} from './external-seeds.mjs';
 // since: 이 항목이 추가된 초기 목록 버전(worker/api.mjs 의 CATALOG_VERSION).
 export const seeds = [
  {id:'solo',title:'나는 SOLO 라이브',subtitle:'수요일 밤의 설렘, SBS Plus',category:'live',kind:'sbs-live',url:'https://solo-channel-live.pages.dev/',originalUrl:'https://solo-channel-live.pages.dev/',art:'solo',badge:'LIVE',verified:false,visible:true,order:1,description:'집TV 안에서 SBS Plus 실시간 방송을 바로 재생합니다. 연결할 때마다 원본 페이지와 같은 공개 API에서 새 재생 주소를 받아옵니다. 현재 방송 편성에 따라 나는 SOLO 이외의 프로그램이 나올 수 있습니다.',alternatives:[{title:'SBS 공식 온에어',url:'https://www.sbs.co.kr/live/S03'}]},
  ...sbsSeeds,
  ...kbsSeeds.map(c=>({...c,since:2})),
+ ...externalSeeds.map(c=>({...c,since:3})),
  {id:'kbs',title:'KBS 온에어',subtitle:'뉴스부터 드라마, 예능까지',category:'live',kind:'external',url:'https://onair.kbs.co.kr/',originalUrl:'https://onair.kbs.co.kr/',art:'kbs',badge:'공식',verified:false,visible:true,order:3,description:'KBS 공식 온에어 페이지로 연결합니다. 원본 사이트의 제공 조건과 지역 제한이 적용됩니다.',alternatives:[]},
  {id:'ebs',title:'EBS 온에어',subtitle:'온 가족이 함께 보는 시간',category:'live',kind:'external',url:'https://www.ebs.co.kr/onair',originalUrl:'https://www.ebs.co.kr/onair',art:'ebs',badge:'공식',verified:false,visible:true,order:4,description:'EBS 공식 온에어 페이지입니다. 교육·교양·어린이 프로그램을 원본 사이트에서 찾아보세요.',alternatives:[]},
  {id:'kbs-vod',title:'KBS 다시보기',subtitle:'보고 싶던 방송을 찾아서',category:'vod',kind:'external',url:'https://vod.kbs.co.kr/',originalUrl:'https://vod.kbs.co.kr/',art:'drama',badge:'공식',verified:false,visible:true,order:5,description:'KBS 공식 다시보기 페이지입니다. 무료 제공 범위와 로그인 여부는 원본 사이트에서 확인하세요.',alternatives:[]},

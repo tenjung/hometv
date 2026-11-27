@@ -8,7 +8,7 @@ import {IptvPage,iptvChannels,type IptvSource} from './iptv';
 import {getSbsChannel,getOfficialChannel} from '../shared/playback.mjs';
 
 type Layer={type:'watch';id:string}|{type:'help'}|{type:'manage'}|{type:'admin'}|null;
-const navs:{id:View;name:string;icon:typeof Home}[]=[{id:'home',name:'홈',icon:Home},{id:'live',name:'실시간 TV',icon:Signal},{id:'iptv',name:'IPTV',icon:Tv},{id:'vod',name:'드라마 · 예능',icon:LayoutGrid},{id:'favorites',name:'즐겨찾기',icon:Heart},{id:'recent',name:'최근 이용',icon:Clock3}];
+const navs:{id:View;name:string;icon:typeof Home}[]=[{id:'home',name:'홈',icon:Home},{id:'live',name:'실시간 TV',icon:Signal},{id:'iptv',name:'IPTV',icon:Tv},{id:'external',name:'외부 TV',icon:ArrowUpRight},{id:'vod',name:'드라마 · 예능',icon:LayoutGrid},{id:'favorites',name:'즐겨찾기',icon:Heart},{id:'recent',name:'최근 이용',icon:Clock3}];
 
 function Brand(){return <div className="brand"><span className="brand-icon"><Tv size={23} strokeWidth={2.4}/></span><span>집<span className="brand-tv">TV</span></span></div>}
 
@@ -24,7 +24,7 @@ function artMark(channel:Channel){
  if(channel.logo)return <><img className="channel-logo" src={channel.logo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display='none';}}/><em>{channel.iptv?.group||'IPTV'}</em></>;
  if(channel.art==='solo')return <><small>나는</small><strong>SOLO</strong><em>그들의 사랑은 계속된다</em></>;
  if(channel.art==='sample')return <><small>TAKE A LITTLE BREAK</small><strong>A little<br/>bloom.</strong><em>플레이어 체험</em></>;
- const word=sbs?sbs.name:channel.art==='sbs'?'SBS':channel.art==='kbs'?'KBS':channel.art==='ebs'?'EBS':channel.art==='drama'?'RE:PLAY':<Tv size={46}/>;
+ const word=sbs?sbs.name:channel.art==='sbs'?'SBS':channel.art==='kbs'?'KBS':channel.art==='ebs'?'EBS':channel.art==='drama'?'RE:PLAY':channel.kind==='external'&&channel.art==='custom'?channel.title.split(' ')[0]:<Tv size={46}/>;
  const caption=sbs?(sbs.group==='radio'?'LIVE RADIO':sbs.group==='24tv'?'24 HOURS':'LIVE TV'):channel.art==='drama'?'다시 만나는 이야기':channel.kind==='external'?'ON AIR':'HOME CINEMA';
  return <><span className={'channel-wordmark '+(sbs?'sbs-wordmark':'')}>{word}</span><em>{caption}</em></>;
 }
@@ -79,6 +79,10 @@ function Hero({channel}:{channel:Channel}){
  </section>;
 }
 
+// 외부 TV 메뉴의 분류. 예전 항목(분류 없음)은 표시 문구·종류로 나눈다.
+const EXTERNAL_GROUPS=['지상파 온에어','종편 · 뉴스 온에어','유튜브 뉴스 라이브','방송사 다시보기','OTT (로그인 필요)','기타 링크'];
+const externalGroup=(c:Channel)=>c.group||(c.badge==='공식'?(c.category==='vod'?'방송사 다시보기':'지상파 온에어'):'기타 링크');
+
 export default function App(){
  useRemoteNavigation();
  const [liveGroup,setLiveGroup]=useState('all');
@@ -101,16 +105,17 @@ export default function App(){
  const visible=channels.filter(c=>c.visible);
  const allIptv=useMemo(()=>iptvChannels(iptvSources),[iptvSources]);
  const everything=useMemo(()=>[...channels.filter(c=>c.visible),...allIptv],[channels,allIptv]);
- const filtered=useMemo(()=>(query||view==='favorites'||view==='recent'?everything:visible).filter(c=>(view==='home'||view==='live'&&c.category==='live'||view==='vod'&&c.category==='vod'||view==='favorites'&&favorites.includes(c.id)||view==='recent'&&recent.includes(c.id))&&`${c.title} ${c.subtitle}`.toLowerCase().includes(query.toLowerCase())&&(view!=='live'||liveGroup==='all'||(liveGroup==='custom'?!getOfficialChannel(c):liveGroup==='kbs'?getOfficialChannel(c)?.broadcaster==='KBS':getSbsChannel(c)?.group===liveGroup))).sort((a,b)=>view==='recent'?recent.indexOf(a.id)-recent.indexOf(b.id):a.order-b.order),[channels,everything,view,favorites,recent,query,liveGroup]);
+ const filtered=useMemo(()=>(query||view==='favorites'||view==='recent'?everything:visible).filter(c=>(view==='home'||view==='live'&&c.category==='live'&&!c.group||view==='vod'&&c.category==='vod'&&!c.group||view==='external'&&c.kind==='external'||view==='favorites'&&favorites.includes(c.id)||view==='recent'&&recent.includes(c.id))&&`${c.title} ${c.subtitle}`.toLowerCase().includes(query.toLowerCase())&&(view!=='live'||liveGroup==='all'||(liveGroup==='custom'?!getOfficialChannel(c):liveGroup==='kbs'?getOfficialChannel(c)?.broadcaster==='KBS':getSbsChannel(c)?.group===liveGroup))).sort((a,b)=>view==='recent'?recent.indexOf(a.id)-recent.indexOf(b.id):a.order-b.order),[channels,everything,view,favorites,recent,query,liveGroup]);
  const [featured,setFeatured]=useState(''),[searchOpen,setSearchOpen]=useState(false);
  function navigate(next:View){setView(next);setQuery('');setSearchOpen(false);setLiveGroup('all');window.scrollTo({top:0,behavior:'smooth'});}
  const pick=(ids:string[])=>ids.map(id=>everything.find(c=>c.id===id)).filter((c):c is Channel=>!!c);
  const favoriteRow=pick(favorites),recentRow=pick(recent).slice(0,12);
  const directLiveRow=visible.filter(isDirectLive);
- const myLiveRow=visible.filter(c=>c.category==='live'&&!getOfficialChannel(c));
+ const myLiveRow=visible.filter(c=>c.category==='live'&&!getOfficialChannel(c)&&!c.group);
+ const externalRow=visible.filter(c=>c.kind==='external');
  const sbsRow=(group:'tv'|'24tv'|'radio')=>visible.filter(c=>getSbsChannel(c)?.group===group);
  const kbsRow=(group:'tv'|'radio')=>visible.filter(c=>{const o=getOfficialChannel(c);return o?.broadcaster==='KBS'&&o.group===group;});
- const vodRow=visible.filter(c=>c.category==='vod');
+ const vodRow=visible.filter(c=>c.category==='vod'&&!c.group);
  const homeDefault=favoriteRow[0]||visible.find(c=>c.id==='solo')||visible[0];
  const featuredChannel=visible.find(c=>c.id===featured)||homeDefault;
  const isHome=view==='home'&&!query;
@@ -156,6 +161,7 @@ export default function App(){
     {row('최근 이용',recentRow,'app',()=>navigate('recent'))}
     {row('우리집 채널',myLiveRow)}
     {iptvSources.map(src=>row(src.name,allIptv.filter(c=>c.iptv?.sourceId===src.id).slice(0,20),'wide',()=>navigate('iptv')))}
+    {row('외부 TV · 방송사 사이트',externalRow.slice(0,16),'wide',()=>navigate('external'))}
     {row('KBS 실시간 TV',kbsRow('tv'),'wide',()=>{navigate('live');setLiveGroup('kbs');})}
     {row('SBS 실시간 TV',sbsRow('tv'),'wide',()=>{navigate('live');setLiveGroup('tv');})}
     {row('하루 종일, 24시간 TV',sbsRow('24tv'),'wide',()=>{navigate('live');setLiveGroup('24tv');})}
@@ -167,7 +173,8 @@ export default function App(){
   :<>
    <div className="gtv-page-head"><h1>{query?'검색 결과':navs.find(n=>n.id===view)?.name}</h1><p>{query?`“${query}” · ${filtered.length}개`:`${view==='iptv'?allIptv.length:filtered.length}개의 채널`}</p></div>
    {view==='live'&&!query&&<div className="live-filters" role="group" aria-label="라이브 채널 분류">{[['all','전체'],['kbs','KBS'],['tv','SBS TV'],['24tv','24시간 TV'],['radio','라디오'],['custom','우리집 채널']].map(([id,label])=><button key={id} className={liveGroup===id?'selected':''} aria-pressed={liveGroup===id} onClick={()=>setLiveGroup(id)}>{label}</button>)}</div>}
-   {view==='iptv'&&!query?<IptvPage sources={iptvSources} render={(c,program)=>tile(c,'wide',program)}/>
+   {view==='external'&&!query?<div className="external-page"><p className="external-note">방송사 공식 사이트로 이동해서 봐요. 리모컨 <kbd>뒤로</kbd>로 집TV에 돌아올 수 있어요.</p>{[...EXTERNAL_GROUPS,...new Set(filtered.map(externalGroup))].filter((g,i,a)=>a.indexOf(g)===i).map(g=>{const items=filtered.filter(c=>externalGroup(c)===g);return items.length?<section className="gtv-row" key={g}><div className="gtv-row-head"><h2>{g}</h2></div><div className="gtv-grid">{items.map(c=>tile(c,'wide'))}</div></section>:null;})}</div>
+   :view==='iptv'&&!query?<IptvPage sources={iptvSources} render={(c,program)=>tile(c,'wide',program)}/>
    :filtered.length?<div className="gtv-grid">{filtered.map(c=>tile(c,'wide'))}</div>
    :<div className="empty-state">{view==='favorites'?<Heart/>:view==='recent'?<Clock3/>:<Search/>}<h2>{query?'찾는 항목이 없어요':view==='favorites'?'좋아하는 방송을 담아보세요':view==='recent'?'아직 이용한 항목이 없어요':'등록된 항목이 없어요'}</h2><p>{query?'등록한 제목이나 설명으로 다시 검색해 주세요.':view==='favorites'?'시청 화면의 하트를 누르면 이곳에 모아드려요.':'홈에서 방송을 선택하거나 관리 화면에서 링크를 추가해 주세요.'}</p><button className="secondary" onClick={()=>navigate('home')}>홈으로</button></div>}
   </>}

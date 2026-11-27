@@ -270,3 +270,6 @@ html.tv-mode .gtv-footer{display:none}
 html.tv-mode .gtv-tile.wide{width:250px}
 html.tv-mode .gtv-tile.app{width:180px}
 html.tv-mode .gtv-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px 16px}
+.external-note{color:#9a9daa;font-size:.9rem;margin:4px 0 6px}
+.external-note kbd{font:inherit;background:#ffffff12;border-radius:4px;padding:1px 6px}
+.external-page .gtv-row{margin-top:20px}
