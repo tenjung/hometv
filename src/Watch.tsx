@@ -48,7 +48,7 @@ export function Watch({channel:c,related=[],listTitle='',onSwitch,favorite,onFav
  useEffect(()=>{const pop=()=>{if(location.hash===PANEL_HASH)return;panelPushed.current=false;setPanel(null);clearTimeout(panelTimer.current);const id=pendingSwitch.current;pendingSwitch.current=null;if(id)onSwitch?.(id);};window.addEventListener('popstate',pop);return()=>{window.removeEventListener('popstate',pop);clearTimeout(panelTimer.current);};},[onSwitch]);
  // 채널 목록이 열리면 현재 채널에 초점을 둔다.
  useEffect(()=>{if(panel!=='channels')return;const el=stripRef.current?.querySelectorAll<HTMLButtonElement>('.strip-card')[pick];el?.focus({preventScroll:true});el?.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});},[panel,pick]);
- useEffect(()=>{if(panel==='info')player.current?.querySelector<HTMLButtonElement>('.info-actions button')?.focus();else if(!panel)player.current?.focus({preventScroll:true});},[panel]);
+ useEffect(()=>{if(panel==='info')player.current?.querySelector<HTMLButtonElement>('.info-actions button')?.focus();else if(!panel)(player.current?.querySelector<HTMLButtonElement>('.player-external .primary')||player.current)?.focus({preventScroll:true});},[panel]);
 
  useEffect(()=>{let alive=true;QRCode.toDataURL(c.originalUrl,{width:240,margin:2,color:{dark:'#15171c',light:'#ffffff'},errorCorrectionLevel:'M'}).then(data=>{if(alive)setQr(data);}).catch(()=>{});return()=>{alive=false;};},[c.originalUrl]);
 
@@ -117,7 +117,8 @@ export function Watch({channel:c,related=[],listTitle='',onSwitch,favorite,onFav
   }
   // 패널이 없을 때: 화면의 버튼(마우스 조작용)에 초점이 있어도 리모컨 동작을 우선한다.
   const action=playerRemoteAction(e);if(!action)return;
-  if(action==='toggle'&&isExternal)return; // 외부 채널은 '사이트에서 시청하기' 버튼이 확인 키를 받는다.
+  // 외부 사이트 항목: 확인 키는 초점 위치와 상관없이 원본 사이트를 연다.
+  if(action==='toggle'&&isExternal){e.preventDefault();e.stopPropagation();open(c.url);return;}
   if(action==='toggle'&&document.activeElement instanceof HTMLButtonElement&&document.activeElement.closest('.player-controls'))return;
   e.preventDefault();e.stopPropagation();
   if(action==='toggle'){void play();poke();}
@@ -165,7 +166,7 @@ export function Watch({channel:c,related=[],listTitle='',onSwitch,favorite,onFav
    {hasList&&<button onClick={()=>openPanel('channels')} tabIndex={-1}><ChevronDown size={18}/>채널 목록</button>}
    {hasList&&(isLive||isExternal)&&<span><kbd>◀ ▶</kbd> 채널 이동</span>}
    {!isLive&&!isExternal&&<span><kbd>◀ ▶</kbd> 10초 이동</span>}
-   {!isExternal&&<span><kbd>확인</kbd> 재생 · 일시정지</span>}
+   <span><kbd>확인</kbd> {isExternal?'사이트 열기':'재생 · 일시정지'}</span>
    <span><kbd>뒤로</kbd> {panel?'닫기':'목록으로'}</span>
   </div>
 
