@@ -36,7 +36,7 @@ export default function App(){
  useEffect(()=>{const tick=()=>{if(document.visibilityState==='visible'&&session?.authenticated)void load();};window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);return()=>{window.removeEventListener('focus',tick);document.removeEventListener('visibilitychange',tick);};},[session?.authenticated]);
  useEffect(()=>{document.documentElement.classList.toggle('tv-mode',tv);},[tv]);
  useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(''),3500);return()=>clearTimeout(timer);},[toast]);
- useEffect(()=>{const pop=()=>setLayer(null);window.addEventListener('popstate',pop);const back=(e:KeyboardEvent)=>{if(['BrowserBack','GoBack'].includes(e.key)&&layer){e.preventDefault();history.back();}};window.addEventListener('keydown',back);return()=>{window.removeEventListener('popstate',pop);window.removeEventListener('keydown',back);};},[layer]);
+ useEffect(()=>{const pop=()=>setLayer(null);window.addEventListener('popstate',pop);const back=(e:KeyboardEvent)=>{if(['BrowserBack','GoBack'].includes(e.key)&&layer){e.preventDefault();if(document.fullscreenElement)void document.exitFullscreen().catch(()=>{});else history.back();}};window.addEventListener('keydown',back);return()=>{window.removeEventListener('popstate',pop);window.removeEventListener('keydown',back);};},[layer]);
  function open(next:NonNullable<Layer>){history.pushState({hometv:true},'',`#${next.type}`);setLayer(next);}
  function close(){if(history.state?.hometv)history.back();else setLayer(null);}
  function favorite(id:string){setFavorites(list=>list.includes(id)?list.filter(x=>x!==id):[...list,id]);}
