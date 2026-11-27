@@ -1,5 +1,7 @@
 # 집TV
 
+개발 현황과 남은 작업: [2026년 11월 27일 업무일지](docs/work-log-2026-11-27.md).
+
 PC와 Android TV / Google TV용 가족 영상 홈. React + TypeScript + Vite 프런트엔드, Cloudflare Worker API, D1 데이터베이스로 구성합니다. 영상은 원본 제공처에서 직접 재생하며 프록시·다운로드·봇 인증 우회를 하지 않습니다.
 
 ## 로컬 실행
