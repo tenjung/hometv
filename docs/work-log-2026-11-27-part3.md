@@ -8,12 +8,14 @@
   - API: `POST /api/admin/iptv/:id/check {offset}`, `GET/PUT /api/admin/iptv/:id/hold`. 상태는 `settings` 의 `iptv_hold_{소스ID}` 에 저장, 소스 삭제 시 함께 삭제.
 - 사용자가 준 m3u 형식(`tvg-logo="…", TJB SBS` 처럼 쉼표 뒤 공백) 파싱 테스트 추가. 테스트 46개 통과, 빌드 확인.
 
+- **iptv-org 대한민국 목록 기본 추가**: `https://iptv-org.github.io/iptv/countries/kr.m3u` 를 기본 IPTV 소스 v2로 등록(`DEFAULT_IPTV`). 기존 DB(v1까지 완료)도 다음 가족 목록 조회 때 한 번 추가되고, 삭제하면 다시 생기지 않는다. 작업 환경에서는 이 주소가 프록시에 막혀 실제 채널 수는 배포 서버에서 확인해야 한다.
+
 ## 판단·보류한 것
 - 공중파·IPTV 30초 미리보기 제한 우회(로그인 우회 등)는 하지 않는다(유료·인증 보호조치 무력화).
 - `mytv.dothome.co.kr` 의 KBS 재송출 링크, 중국 커뮤니티의 한국 IPTV 재송출 주소는 기본 목록에 넣지 않는다. KBS는 기존 공식 라이브 사용.
 - 사용자 m3u의 춘천 MBC(`stream.chmbc.co.kr`, 방송사 자체 스트림)·TJB SBS(http)는 관리자가 직접 입력으로 넣어 쓸 수 있다. http 스트림은 PC 브라우저(https 페이지)에서 막힐 수 있고 안드로이드 앱에서는 재생될 수 있다.
 
 ## 남은 일
-1. 실제 배포(Vercel)에서 사용자 m3u를 넣고 재생 확인을 돌려 보류 결과 확인.
+1. 배포 후 iptv-org 대한민국 소스가 생겼는지 확인하고 재생 확인 실행. 사용자 m3u도 넣고 재생 확인을 돌려 보류 결과 확인.
 2. 합법 채널 확대: 지역 MBC·SBS 계열사 공개 스트림, 공식 유튜브 라이브(YTN·연합뉴스TV·KTV 등) 추가 검토.
 3. 주기적 자동 재생 확인(예: 하루 한 번) 여부 결정.

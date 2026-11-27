@@ -37,19 +37,19 @@ test('admins import a pasted playlist, families read channels, passwords are nev
  assert.equal((await call('/iptv/epg?source='+created.body.source.id+'&ids=a','GET',undefined,family)).status,200);
  assert.equal((await call('/admin/iptv/'+created.body.source.id,'DELETE',{},admin)).status,200);assert.equal((await call('/iptv','GET',undefined,family)).body.sources.length,0);});
 test('an empty or unreadable playlist is rejected with a clear message',async t=>{const {call,login}=fixture(t);const admin=await login('admin');const r=await call('/admin/iptv','POST',{name:'빈 목록',type:'text',text:'hello'},admin);assert.equal(r.status,422);assert.match(r.body.error,/채널을 찾지 못했어요/);});
-test('Samsung TV Plus Korea is added once by default and stays deleted after an admin removes it',async t=>{
+test('Samsung TV Plus Korea and iptv-org Korea are added once by default and stay deleted after an admin removes them',async t=>{
  const data={slug:'stvp-{id}',regions:{kr:{channels:{KR1:{name:'뉴스 채널',chno:2,group:'뉴스',logo:'https://logo.example/1.png'},KR2:{name:'쇼핑',chno:1,group:'쇼핑',license_url:'https://drm.example'}}}}};
  const original=globalThis.fetch;let calls=0;
- globalThis.fetch=async url=>{calls++;return String(url).includes('channels')?new Response(JSON.stringify(data)):new Response('<tv></tv>');};
+ globalThis.fetch=async url=>{calls++;if(String(url).endsWith('/countries/kr.m3u'))return new Response('#EXTM3U\n#EXTINF:-1 tvg-id="Arirang.kr" group-title="General",Arirang TV\nhttps://live.example/arirang.m3u8');return String(url).includes('channels')?new Response(JSON.stringify(data)):new Response('<tv></tv>');};
  t.after(()=>{globalThis.fetch=original;});
  const DB=localDB(':memory:');t.after(()=>DB.close());
  const env={DB,FAMILY_PIN:'482619',ADMIN_PIN:'73825194',SESSION_SECRET:'test-secret-is-at-least-thirty-two-characters'};
  const call=async(path,method='GET',payload,cookie='')=>{const r=await handleApi(new Request('https://home.test/api'+path,{method,headers:{'Content-Type':'application/json',...(method!=='GET'?{Origin:'https://home.test'}:{}),Cookie:cookie},...(payload!==undefined?{body:JSON.stringify(payload)}:{})}),env);return{status:r.status,body:await r.json(),cookie:r.headers.get('Set-Cookie')?.split(';')[0]};};
- const first=(await call('/iptv')).body.sources;assert.equal(first.length,1);assert.equal(first[0].name,'삼성 TV 플러스');
+ const first=(await call('/iptv')).body.sources;assert.deepEqual(first.map(s=>s.name),['삼성 TV 플러스','iptv-org 대한민국']);assert.equal(first[1].channels[0].name,'Arirang TV');
  assert.deepEqual(first[0].channels.map(c=>[c.name,c.url]),[['뉴스 채널','https://jmp2.uk/stvp-KR1']]);
- const before=calls;assert.equal((await call('/iptv')).body.sources.length,1);assert.equal(calls,before);
+ const before=calls;assert.equal((await call('/iptv')).body.sources.length,2);assert.equal(calls,before);
  const admin=(await call('/login','POST',{role:'admin',pin:env.ADMIN_PIN})).cookie;
- assert.equal((await call('/admin/iptv/'+first[0].id,'DELETE',{},admin)).status,200);
+ for(const s of first)assert.equal((await call('/admin/iptv/'+s.id,'DELETE',{},admin)).status,200);
  assert.equal((await call('/iptv')).body.sources.length,0);
 });
 

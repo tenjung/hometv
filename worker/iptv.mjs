@@ -144,17 +144,29 @@ async function sync(db,meta,{epg=true}={}){
   return channels;
 }
 
-// 기본 IPTV 소스: 처음 한 번 삼성 TV 플러스(대한민국)를 넣는다. 성공한 뒤에는 다시 넣지 않아서 관리자가 지우면 그대로 지워진다.
-const DEFAULT_IPTV_VERSION=1;
+// 기본 IPTV 소스: 버전마다 한 번씩 넣는다. 성공한 뒤에는 다시 넣지 않아서 관리자가 지우면 그대로 지워진다.
+// v1 삼성 TV 플러스(대한민국), v2 iptv-org 대한민국 공개 목록(github.com/iptv-org/iptv).
+export const IPTV_ORG_KR='https://iptv-org.github.io/iptv/countries/kr.m3u';
+const DEFAULT_IPTV=[
+  {version:1,match:m=>m.type==='samsung'&&m.source?.region==='kr',source:{name:'삼성 TV 플러스',type:'samsung',region:'kr',epgUrl:''}},
+  {version:2,match:m=>m.type==='m3u'&&m.source?.url===IPTV_ORG_KR,source:{name:'iptv-org 대한민국',type:'m3u',url:IPTV_ORG_KR,epgUrl:''}}
+];
+const DEFAULT_IPTV_VERSION=DEFAULT_IPTV.at(-1).version;
 async function seedDefaults(db){
-  if(Number((await get(db,'iptv_defaults'))||0)>=DEFAULT_IPTV_VERSION)return;
-  const list=await sources(db);
-  if(!list.some(m=>m.type==='samsung'&&m.source?.region==='kr')){
-    const meta={id:crypto.randomUUID().slice(0,8),source:{name:'삼성 TV 플러스',type:'samsung',region:'kr',epgUrl:''},name:'삼성 TV 플러스',type:'samsung'};
-    try{await sync(db,meta);}catch{return;} // 실패하면 다음 접속 때 다시 시도
-    list.push(meta);await saveSources(db,list);
+  const done=Number((await get(db,'iptv_defaults'))||0);
+  if(done>=DEFAULT_IPTV_VERSION)return;
+  const list=await sources(db);let reached=done;
+  for(const d of DEFAULT_IPTV){
+    if(d.version<=done)continue;
+    if(!list.some(d.match)){
+      if(list.length>=MAX_SOURCES){reached=d.version;continue;}
+      const meta={id:crypto.randomUUID().slice(0,8),source:{...d.source},name:d.source.name,type:d.source.type};
+      try{await sync(db,meta);}catch{break;} // 실패하면 다음 접속 때 다시 시도
+      list.push(meta);await saveSources(db,list);
+    }
+    reached=d.version;
   }
-  await put(db,'iptv_defaults',DEFAULT_IPTV_VERSION).run();
+  if(reached>done)await put(db,'iptv_defaults',reached).run();
 }
 
 // 가족: 모든 소스의 채널 목록
