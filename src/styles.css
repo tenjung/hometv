@@ -256,3 +256,17 @@
 .iptv-source{border-bottom:1px solid #ffffff09}
 .iptv-groups-editor{padding:4px 14px 18px}
 .admin-row-copy .warn{color:#e9a05f}
+
+/* ── TV 화면 맞춤 (Google TV WebView는 1920×1080을 CSS 960×540으로 보여 준다) ──
+   1280×720 기준 레이아웃을 75%로 줄여 홈 배너 아래에 카드 줄이 여러 개 보이게 한다. */
+@media (max-width:1100px) and (min-aspect-ratio:3/2){html.tv-mode body{zoom:.75}}
+html.tv-mode .gtv-top{background:#101117f7;backdrop-filter:blur(10px);padding-top:14px;padding-bottom:10px}
+html.tv-mode .gtv-hero{height:clamp(220px,36vh,380px)}
+html.tv-mode .gtv-hero h1{font-size:2.4rem;margin:6px 0 8px}
+html.tv-mode .gtv-row{margin-top:8px}
+html.tv-mode .gtv-track{padding-top:12px;padding-bottom:12px}
+html.tv-mode .gtv-tile,html.tv-mode .gtv-row,html.tv-mode .live-filters button{scroll-margin-top:96px;scroll-margin-bottom:24px}
+html.tv-mode .gtv-footer{display:none}
+html.tv-mode .gtv-tile.wide{width:250px}
+html.tv-mode .gtv-tile.app{width:180px}
+html.tv-mode .gtv-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px 16px}

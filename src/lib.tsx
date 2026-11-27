@@ -32,7 +32,9 @@ export function useRemoteNavigation(){
     const horizontal=e.key==='ArrowLeft'||e.key==='ArrowRight',positive=e.key==='ArrowRight'||e.key==='ArrowDown';
     let target:HTMLElement|null=null,best=Infinity;
     for(const el of elements){if(el===active)continue;const r=el.getBoundingClientRect();const dx=r.left+r.width/2-x,dy=r.top+r.height/2-y;const primary=horizontal?dx:dy,cross=Math.abs(horizontal?dy:dx);if((positive?primary:-primary)<4)continue;const aligned=horizontal?Math.min(rect.bottom,r.bottom)-Math.max(rect.top,r.top)>0:Math.min(rect.right,r.right)-Math.max(rect.left,r.left)>0;const score=Math.abs(primary)+(aligned?cross*.3:cross*3+500);if(score<best){best=score;target=el;}}
-    target?.focus({preventScroll:true});target?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+    target?.focus({preventScroll:true});
+    // 위쪽 메뉴로 올라가면 페이지 맨 위(홈 배너)까지 보여 준다.
+    if(target?.closest('.gtv-top'))window.scrollTo({top:0,behavior:'smooth'});else target?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
   }document.addEventListener('keydown',handle);return()=>document.removeEventListener('keydown',handle);},[]);
 }
 export function validHttps(value:string){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}}
