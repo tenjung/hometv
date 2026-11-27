@@ -1,0 +1,12 @@
+# Vercel 업로드에서 제외: 비밀값·로컬 DB·빌드 결과·배포 설정
+.dev.vars
+.env
+.env.*
+!.env.example
+.local
+dist
+node_modules
+.openai
+*.tsbuildinfo
+tests
+android

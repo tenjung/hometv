@@ -14,3 +14,134 @@
 @media(max-width:600px){.sbs-wordmark{font-size:1.15rem!important}.live-filters{gap:7px}.live-filters button{font-size:.75rem;padding:9px 12px}.radio-visual{gap:10px}.radio-visual>svg{width:30px}.radio-visual h2{font-size:1.65rem}.radio-visual p{font-size:.75rem}.radio-stage .big-play{top:72%;width:43px;height:43px}}
 .preview-banner{position:absolute;top:12px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#151821df;border:1px solid #ffffff26;border-radius:8px;padding:10px 13px;z-index:2;color:#efc8ab;font-size:.8rem}.preview-banner button{font-size:.75rem;color:#d8dce5;min-height:30px}.preview-banner span{font-variant-numeric:tabular-nums}@media(max-width:600px){.preview-banner{top:8px;left:8px;right:8px;padding:7px 9px;gap:7px;font-size:.65rem}.preview-banner button{font-size:.6rem}}
 .remote-instructions{display:flex;flex-wrap:wrap;gap:10px 20px;padding:14px 28px 0;color:#8995a7;font-size:.75rem}.remote-instructions span{display:flex;align-items:center;gap:6px}.remote-instructions kbd{font-size:.7rem}.video-stage:focus-visible{outline:3px solid #ffc396;outline-offset:4px}.video-controls .icon-button{min-width:44px;min-height:44px}.video-controls .volume-step{min-width:35px;min-height:40px}@media(max-width:600px){.video-controls .icon-button{width:44px;height:44px}.video-controls .volume-step{display:none}.video-controls .icon-button svg{width:20px;height:20px}.video-time{font-size:.65rem}.remote-instructions{padding:13px 20px 0;gap:8px 13px;font-size:.7rem}.remote-instructions kbd{font-size:.65rem}.tv-mode .video-controls .icon-button{min-width:44px;min-height:44px}}
+
+/* ===== Google TV 스타일 홈 ===== */
+.gtv-shell{min-height:100vh;background:radial-gradient(ellipse at 70% -10%,#2a2d3a 0%,#101117 55%)}
+.gtv-top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 48px 14px;background:linear-gradient(#101117f2,#10111700)}
+.gtv-tabs{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none;padding:6px}
+.gtv-tabs::-webkit-scrollbar{display:none}
+.gtv-tab{font-size:1.05rem;font-weight:600;color:#d4d6de;padding:10px 20px;border-radius:999px;white-space:nowrap;gap:8px}
+.gtv-tab:hover{background:#ffffff14}
+.gtv-tab.active{background:#ffffff2e;color:#fff}
+.gtv-tab:focus-visible{outline:0;background:#f1f1f4;color:#15161c;box-shadow:none}
+.gtv-search{display:flex;flex-direction:row;flex-shrink:0;align-items:center;gap:8px;height:46px;font-weight:400;background:#ffffff1c;border-radius:999px;padding:0 8px 0 16px;min-width:260px}
+.gtv-search input{background:none;border:0;min-height:0;height:100%;padding:0;font-size:1rem;flex:1;min-width:0}
+.gtv-search>svg{color:#c9cbd4}
+.gtv-search input:focus-visible{outline:0;box-shadow:none}
+.gtv-search:focus-within{background:#ffffff30;box-shadow:0 0 0 2px #fff}
+.gtv-search button{width:32px;height:32px;border-radius:50%}
+.gtv-status{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.gtv-icon{width:46px;height:46px;border-radius:50%;color:#d4d6de}
+.gtv-icon:hover{background:#ffffff14}
+.gtv-icon.on{color:var(--accent)}
+.gtv-icon:focus-visible{outline:0;background:#f1f1f4;color:#15161c;box-shadow:none}
+.gtv-avatar{width:36px;height:36px;border-radius:50%;background:#7c5cc4;color:#fff;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 6px}
+.gtv-status time{font-size:1.5rem;font-weight:500;color:#e9eaf0;font-variant-numeric:tabular-nums;margin-left:8px}
+.gtv-main{padding:0 48px}
+
+.gtv-hero{position:relative;height:clamp(260px,40vh,430px);margin:0 -48px;overflow:hidden;display:flex;align-items:flex-end}
+.gtv-hero-bg{position:absolute;inset:0;-webkit-mask-image:linear-gradient(#000 40%,transparent 100%);mask-image:linear-gradient(#000 40%,transparent 100%)}
+.gtv-hero-art{position:absolute;inset:0 0 0 38%;display:flex;align-items:center;justify-content:center;opacity:.9}
+.gtv-hero-art .art-type{position:static;transform:scale(1.9)}
+.gtv-hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,#101117 0%,#101117e6 30%,#10111766 60%,#10111700 85%),linear-gradient(0deg,#101117 0%,#10111700 45%)}
+.gtv-hero-copy{position:relative;padding:0 48px 28px;max-width:760px}
+.gtv-kicker{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;color:#c9cbd4;letter-spacing:.5px}
+.gtv-dot{width:8px;height:8px;border-radius:50%;background:#ff5a5f;box-shadow:0 0 0 4px #ff5a5f33}
+.gtv-hero h1{font-size:clamp(2rem,3.6vw,3.2rem);font-weight:800;letter-spacing:-1px;line-height:1.15;margin:10px 0 12px;text-shadow:0 2px 20px #0008}
+.gtv-hero p{font-size:1rem;line-height:1.6;color:#d6d7de;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gtv-meta{display:inline-block;margin-top:12px;font-size:.8rem;color:#a9acb8}
+
+.gtv-rows{padding-bottom:10px}
+.gtv-row{margin-top:18px}
+.gtv-row-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.gtv-row h2{font-size:1.05rem;font-weight:700;color:#e3e4ea}
+.gtv-more{font-size:.85rem;color:#a9acb8;padding:6px 12px;border-radius:999px;gap:4px}
+.gtv-more:hover{background:#ffffff14}
+.gtv-more:focus-visible{outline:0;background:#f1f1f4;color:#15161c;box-shadow:none}
+.gtv-track{display:flex;gap:18px;overflow-x:auto;padding:14px 10px 18px;margin:0 -10px;scroll-snap-type:x proximity;scrollbar-width:none}
+.gtv-track::-webkit-scrollbar{display:none}
+.gtv-tile{flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:0;scroll-snap-align:start;text-align:left}
+.gtv-tile.app{width:200px}
+.gtv-tile.wide{width:300px}
+.gtv-art{position:relative;display:block;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid #ffffff10;box-shadow:0 6px 18px #0006;transition:transform .18s,box-shadow .18s}
+.gtv-tile.app .gtv-art{aspect-ratio:16/8}
+.gtv-art .art-type{inset:8px}
+.gtv-tile.app .art-type{transform:scale(.62)}
+.gtv-tile.wide .art-type{transform:scale(.85)}
+.gtv-live{position:absolute;top:9px;left:9px;z-index:1;display:flex;align-items:center;gap:5px;background:#e5484d;color:#fff;font-size:.6rem;font-weight:700;padding:3px 7px;border-radius:5px}
+.gtv-live span{width:5px;height:5px;border-radius:50%;background:#fff}
+.gtv-label{display:flex;flex-direction:column;gap:3px;padding:0 4px;min-width:0}
+.gtv-label strong{font-size:.92rem;font-weight:600;color:#e6e7ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gtv-label small{font-size:.75rem;color:#8f93a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gtv-tile.app .gtv-label{text-align:center;opacity:0;transition:opacity .15s}
+.gtv-tile:focus-visible{outline:0;box-shadow:none}
+.gtv-tile:focus-visible .gtv-art,.gtv-tile:hover .gtv-art{transform:scale(1.08);box-shadow:0 0 0 4px #fff,0 16px 36px #000b}
+.gtv-tile:focus-visible .gtv-label strong{color:#fff}
+.gtv-tile.app:focus-visible .gtv-label,.gtv-tile.app:hover .gtv-label{opacity:1}
+.gtv-tile:active:not(:disabled){transform:none}
+
+.gtv-page-head{padding:20px 0 6px}
+.gtv-page-head h1{font-size:2rem;font-weight:800;letter-spacing:-.6px}
+.gtv-page-head p{color:#9a9daa;margin-top:6px;font-size:.9rem}
+.gtv-main .live-filters{margin:14px 0 4px}
+.gtv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:26px 20px;padding:18px 0 10px}
+.gtv-grid .gtv-tile{width:auto}
+.gtv-footer{display:flex;gap:22px;justify-content:center;padding:26px 0 30px;color:#6f7380;font-size:.75rem}
+.gtv-footer kbd{font:inherit;background:#ffffff12;border-radius:4px;padding:2px 6px;margin-right:4px;color:#b7bac4}
+.gtv-shell .toast{left:50%}
+
+/* ===== 시청 화면: 왼쪽 영상 · 오른쪽 채널 목록 ===== */
+:root .dialog.full{width:100vw;max-width:100vw;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;margin:0;border:0;border-radius:0;padding:0;background:#16171d}
+.watch-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);height:100vh;height:100dvh}
+.watch-layout .watch-main{overflow-y:auto;border-right:1px solid var(--line);padding-bottom:20px}
+.watch-step{display:flex;justify-content:space-between;gap:12px;padding:12px 24px 4px}
+.watch-step .text-button{font-size:.9rem;max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.watch-list{display:flex;flex-direction:column;min-height:0;background:#1b1c23}
+.watch-list h3{display:flex;align-items:center;gap:10px;font-size:1.05rem;padding:22px 26px 12px}
+.watch-list h3 span{font-size:.75rem;color:#9a9daa;background:#ffffff10;border-radius:999px;padding:2px 9px}
+.watch-list>div{overflow-y:auto;overflow-x:hidden;padding:4px 14px 24px;display:grid;grid-template-columns:1fr;gap:4px;align-content:start}
+.watch-list-item{display:flex;align-items:center;justify-content:flex-start;gap:14px;text-align:left;padding:14px;border-radius:10px;color:#d8d9e0}
+.watch-list-item:hover{background:#ffffff0d}
+.watch-list-item:focus-visible{outline:0;background:#f1f1f4;color:#15161c;box-shadow:none}
+.watch-list-item:focus-visible small{color:#4b4e58}
+.watch-list-item.current{background:#ed956e22;color:#fff;box-shadow:inset 3px 0 0 var(--accent)}
+.watch-list-no{width:26px;flex-shrink:0;text-align:center;font-size:.85rem;color:#8f93a0;font-variant-numeric:tabular-nums}
+.watch-list-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.watch-list-copy strong{font-size:.98rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.watch-list-copy small{font-size:.75rem;color:#8f93a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.watch-list-live{font-size:.6rem;font-weight:700;color:#fff;background:#e5484d;border-radius:4px;padding:2px 6px;flex-shrink:0}
+@media(min-width:1400px){.watch-list>div{grid-template-columns:1fr 1fr}}
+
+@media(max-width:900px){
+ .gtv-top{padding:14px 16px 10px;flex-wrap:wrap;gap:8px}
+ .gtv-tabs{order:2;width:100%;padding:4px 0}
+ .gtv-tab{font-size:.95rem;padding:9px 15px}
+ .gtv-status{margin-left:auto}
+ .gtv-status time{font-size:1.1rem}
+ .gtv-icon{width:42px;height:42px}
+ .gtv-avatar{display:none}
+ .gtv-main{padding:0 16px}
+ .gtv-hero{margin:0 -16px;height:260px}
+ .gtv-hero-art{inset:0 0 30% 30%}
+ .gtv-hero-copy{padding:0 16px 18px}
+ .gtv-hero p{font-size:.9rem}
+ .gtv-track{gap:14px}
+ .gtv-tile.app{width:150px}
+ .gtv-tile.wide{width:230px}
+ .gtv-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:20px 14px}
+ .gtv-footer{display:none}
+ .watch-layout{display:block;height:auto}
+ .watch-layout .watch-main{overflow:visible;border-right:0}
+ .watch-list{border-top:1px solid var(--line)}
+ .watch-list>div{overflow:visible}
+ .dialog.full{overflow-y:auto}
+}
+@media(hover:none){.gtv-tile.app .gtv-label{opacity:1}}
+@media(max-width:600px){.gtv-search{min-width:0;flex:1}}
+.gtv-chip{position:absolute;top:9px;left:9px;z-index:1;display:flex;align-items:center;gap:5px;font-size:.62rem;font-weight:700;padding:3px 7px;border-radius:5px;color:#fff;background:#00000080}
+.gtv-chip.live{background:#e5484d}
+.gtv-chip.live span{width:5px;height:5px;border-radius:50%;background:#fff}
+.gtv-chip.preview{background:#c98a1e}
+.gtv-chip.ext{background:#ffffff26;color:#e4e5ea}
+.watch-list-live.preview{background:#c98a1e}
+.watch-list-live.ext{background:#ffffff26;color:#e4e5ea}

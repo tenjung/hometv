@@ -13,6 +13,7 @@
     "catalog:sbs": "node scripts/update-sbs-catalog.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.1",
     "hls.js": "^1.6.0",
     "lucide-react": "^0.468.0",
     "qrcode": "^1.5.4",

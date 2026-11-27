@@ -1,6 +1,8 @@
 # 집TV
 
-개발 현황과 남은 작업: [2026년 11월 27일 업무일지](docs/work-log-2026-11-27.md).
+개발 현황과 남은 작업: [2026년 11월 27일 업무일지](docs/work-log-2026-11-27.md), [2부: 외부 배포·Android TV 앱](docs/work-log-2026-11-27-part2.md).
+
+**외부 접속 주소: https://hometv-kappa.vercel.app** (Vercel + Neon). Android TV·폰 앱은 [`android/`](android) 와 [GitHub 릴리스](https://github.com/tenjung/hometv/releases)를 참고하세요.
 
 PC와 Android TV / Google TV용 가족 영상 홈. React + TypeScript + Vite 프런트엔드, Cloudflare Worker API, D1 데이터베이스로 구성합니다. 영상은 원본 제공처에서 직접 재생하며 프록시·다운로드·봇 인증 우회를 하지 않습니다.
 

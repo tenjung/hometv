@@ -62,7 +62,7 @@ export function validateChannel(input) {
 }
 async function seed(db) {
   if(await setting(db,'catalog_initialized'))return;
-  await db.batch([...seeds.map(c=>db.prepare('INSERT OR IGNORE INTO channels (id,payload,revision,updated_at) VALUES (?,?,1,?)').bind(c.id,JSON.stringify({...c,permission:c.kind!=='external'}),Date.now())),db.prepare("INSERT OR IGNORE INTO settings (key,value) VALUES ('catalog_initialized','1')")]);
+  await db.batch([...seeds.map(c=>db.prepare('INSERT INTO channels (id,payload,revision,updated_at) VALUES (?,?,1,?) ON CONFLICT DO NOTHING').bind(c.id,JSON.stringify({...c,permission:c.kind!=='external'}),Date.now())),db.prepare("INSERT INTO settings (key,value) VALUES ('catalog_initialized','1') ON CONFLICT DO NOTHING")]);
 }
 async function list(db,admin) {
   await seed(db);
@@ -123,7 +123,7 @@ export async function handleApi(request,env) {
     return json({ok:true});
   }
   if(path==='/api/admin/reports'&&method==='GET') {
-    const {results}=await env.DB.prepare('SELECT id,channel_id AS channelId,reason,created_at AS createdAt FROM reports ORDER BY created_at DESC LIMIT 100').all();
+    const {results}=await env.DB.prepare('SELECT id,channel_id AS "channelId",reason,created_at AS "createdAt" FROM reports ORDER BY created_at DESC LIMIT 100').all();
     return json({reports:results});
   }
   if(path==='/api/admin/reports'&&method==='DELETE') {
