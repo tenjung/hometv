@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {ArrowUpRight,Check,ChevronLeft,ChevronRight,Clock3,ExternalLink,Heart,Home,LayoutGrid,LoaderCircle,LockKeyhole,LogOut,Monitor,Play,Plus,Radio,Search,Settings,ShieldCheck,Signal,SlidersHorizontal,Sparkles,Tv,Wifi,X} from 'lucide-react';
-import {api,Dialog,external,isDirectLive,playBadge,useRemoteNavigation,useStored} from './lib';
+import {api,Dialog,external,isDirectLive,isSbsLogin,playBadge,useRemoteNavigation,useStored} from './lib';
 import type {Channel,Session,View} from './types';
 import {Watch} from './Watch';
 import {Manage} from './Manage';
@@ -47,7 +47,7 @@ function statusText(channel:Channel){
  const sbs=getSbsChannel(channel);
  if(channel.iptv)return 'IPTV 재생 목록';
  if(channel.verified)return 'TV 재생 확인';
- if(sbs?.mode==='preview')return '공식 미리보기 · 로그인 후 계속';
+ if(sbs?.mode==='preview')return 'SBS 공식 사이트에서 로그인 후 시청';
  return channel.kind==='external'?'외부 사이트에서 시청':'집TV에서 바로 재생';
 }
 
@@ -66,7 +66,7 @@ function Tile({channel,size,onOpen,onFocus,program}:{channel:Channel;size:TileSi
    <StatusChip channel={channel}/>
    <span className="art-type">{artMark(channel)}</span>
   </span>
-  <span className="gtv-label"><strong>{channel.title}</strong>{size==='wide'&&(program||<small>{channel.subtitle||groupLabel(channel)}</small>)}</span>
+  <span className="gtv-label"><strong>{channel.title}</strong>{size==='wide'&&(program||<small>{isSbsLogin(channel)?'SBS 공식 사이트 · 로그인 후 전체 시청':channel.subtitle||groupLabel(channel)}</small>)}</span>
  </button>;
 }
 
@@ -128,7 +128,7 @@ export default function App(){
  const homeDefault=favoriteRow[0]||visible.find(c=>c.id==='solo')||visible[0];
  const featuredChannel=visible.find(c=>c.id===featured)||homeDefault;
  const isHome=view==='home';
- function watch(id:string){open({type:'watch',id});}
+ function watch(id:string){const c=everything.find(x=>x.id===id);if(c&&isSbsLogin(c)){markRecent(id);external(c.originalUrl||c.url);return;}open({type:'watch',id});}
  function tile(c:Channel,size:TileSize,program?:React.ReactNode){return <Tile key={c.id} channel={c} size={size} program={program} onOpen={()=>watch(c.id)} onFocus={()=>setFeatured(c.id)}/>;}
  function row(title:string,items:Channel[],size:TileSize='wide',more?:()=>void){
   if(!items.length)return null;
@@ -136,7 +136,7 @@ export default function App(){
  }
  // 시청 화면 오른쪽 목록: 같은 분류의 채널끼리 묶는다.
  function relatedFor(c:Channel){if(c.iptv){const {sourceId,group}=c.iptv;return allIptv.filter(x=>x.iptv?.sourceId===sourceId&&x.iptv.group===group);}const o=getOfficialChannel(c);return visible.filter(x=>{if(x.category!==c.category)return false;const p=getOfficialChannel(x);return o?p?.broadcaster===o.broadcaster&&p.group===o.group:!p;});}
- function switchChannel(id:string){history.replaceState(history.state,'','#watch');setLayer({type:'watch',id});}
+ function switchChannel(id:string){const c=everything.find(x=>x.id===id);if(c&&isSbsLogin(c)){markRecent(id);external(c.originalUrl||c.url);return;}history.replaceState(history.state,'','#watch');setLayer({type:'watch',id});}
  async function logout(){try{await api('/logout',{method:'POST',body:'{}'});setSession({authenticated:true,admin:false});setToast('관리자 접속을 마쳤어요.');}catch(e){setToast((e as Error).message);}}
  const active=layer?.type==='watch'?(channels.find(c=>c.id===layer.id)||allIptv.find(c=>c.id===layer.id)):null;
  const time=clock.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Seoul'});

@@ -1,7 +1,7 @@
 import {sbsCatalog} from './sbs-catalog.mjs';
 export const sbsSeeds=sbsCatalog.map((entry,index)=>({
   id:entry.id==='S01'?'sbs':'sbs-'+entry.id.toLowerCase(),title:entry.name,
-  subtitle:entry.mode==='preview'?`공식 ${entry.previewSeconds}초 미리보기`:entry.group==='24tv'?'SBS 24시간 TV':entry.group==='radio'?'SBS 라이브 라디오':'SBS 실시간 TV',
+  subtitle:entry.mode==='preview'?'SBS 공식 사이트 · 로그인 후 전체 시청':entry.group==='24tv'?'SBS 24시간 TV':entry.group==='radio'?'SBS 라이브 라디오':'SBS 실시간 TV',
   category:'live',kind:entry.direct?'sbs-live':'external',url:entry.url,originalUrl:entry.url,
   art:entry.group==='24tv'?'drama':entry.group==='radio'?'kbs':'sbs',badge:entry.group==='24tv'?'24시간':entry.group==='radio'?'RADIO':'공식',
   verified:false,visible:true,permission:entry.direct,order:20+index,

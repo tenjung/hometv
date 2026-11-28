@@ -18,6 +18,8 @@
 
 - **춘천 MBC 기본 채널** (`shared/seeds.mjs`, `CATALOG_VERSION` 4): 춘천MBC 자체 공개 스트림 `https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8` 을 실시간 TV 2번째 카드(내부 HLS 재생, 카드 디자인 'MBC' 네이비 추가)로 등록. 기존 DB에도 한 번만 추가, 지우면 다시 생기지 않음. MBC 본사 온에어는 외부 출처 'Not Allow'라 계속 외부 연결. 작업 환경에서 이 스트림 주소가 프록시로 막혀 실제 재생(CORS 포함)은 배포 후 확인 필요.
 
+- **SBS 60초 미리보기 → SBS 로그인 연결** (`src/lib.tsx` `isSbsLogin`, `src/App.tsx`): 미리보기 채널(SBS·funE·Sports·Golf·Life·24시간 TV 등)을 누르면 60초 미리보기 대신 SBS 공식 라이브 페이지(`sbs.co.kr/live/…`)를 연다. 안드로이드 앱(WebView)에서는 SBS에 한 번 로그인하면 유지되어 그 화면에서 전체 시청, 뒤로 버튼으로 집TV 복귀. 표시는 'SBS 로그인' 꼬리표와 '로그인 후 전체 시청'. 채널 띠에서 넘어갈 때도 같은 방식. SBS 계정·이용권 조건은 SBS를 따른다(로그인 정보를 집TV가 다루지 않음).
+
 ## 판단·보류한 것
 - 공중파·IPTV 30초 미리보기 제한 우회(로그인 우회 등)는 하지 않는다(유료·인증 보호조치 무력화).
 - `mytv.dothome.co.kr` 의 KBS 재송출 링크, 중국 커뮤니티의 한국 IPTV 재송출 주소는 기본 목록에 넣지 않는다. KBS는 기존 공식 라이브 사용.
