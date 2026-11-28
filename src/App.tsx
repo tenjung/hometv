@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {ArrowUpRight,Check,ChevronLeft,ChevronRight,Clock3,ExternalLink,Heart,Home,LayoutGrid,LoaderCircle,LockKeyhole,LogOut,Monitor,Play,Plus,Search,Settings,ShieldCheck,Signal,SlidersHorizontal,Sparkles,Tv,Wifi,X} from 'lucide-react';
+import {ArrowUpRight,Check,ChevronLeft,ChevronRight,Clock3,ExternalLink,Heart,Home,LayoutGrid,LoaderCircle,LockKeyhole,LogOut,Monitor,Play,Plus,Radio,Search,Settings,ShieldCheck,Signal,SlidersHorizontal,Sparkles,Tv,Wifi,X} from 'lucide-react';
 import {api,Dialog,external,isDirectLive,playBadge,useRemoteNavigation,useStored} from './lib';
 import type {Channel,Session,View} from './types';
 import {Watch} from './Watch';
@@ -9,7 +9,9 @@ import {getSbsChannel,getOfficialChannel} from '../shared/playback.mjs';
 
 type Layer={type:'watch';id:string}|{type:'help'}|{type:'manage'}|{type:'admin'}|{type:'settings'}|null;
 // 왼쪽 메뉴(유튜브 TV식). 평소엔 아이콘만, 메뉴에 초점이 가면 이름과 함께 펼쳐진다.
-const navs:{id:View;name:string;icon:typeof Home}[]=[{id:'search',name:'검색',icon:Search},{id:'home',name:'홈',icon:Home},{id:'live',name:'실시간 TV',icon:Signal},{id:'iptv',name:'IPTV',icon:Tv},{id:'external',name:'외부 TV',icon:ArrowUpRight},{id:'vod',name:'다시보기',icon:LayoutGrid},{id:'favorites',name:'즐겨찾기',icon:Heart}];
+// 공식 라디오 채널은 실시간 TV와 나눠 라디오 메뉴에 모은다.
+const isRadio=(c:Channel)=>getOfficialChannel(c)?.group==='radio';
+const navs:{id:View;name:string;icon:typeof Home}[]=[{id:'search',name:'검색',icon:Search},{id:'home',name:'홈',icon:Home},{id:'live',name:'실시간 TV',icon:Signal},{id:'radio',name:'라디오',icon:Radio},{id:'iptv',name:'IPTV',icon:Tv},{id:'external',name:'외부 TV',icon:ArrowUpRight},{id:'vod',name:'다시보기',icon:LayoutGrid},{id:'favorites',name:'즐겨찾기',icon:Heart}];
 
 function Brand(){return <div className="brand"><span className="brand-icon"><Tv size={23} strokeWidth={2.4}/></span><span>집<span className="brand-tv">TV</span></span></div>}
 
@@ -106,7 +108,7 @@ export default function App(){
  const visible=channels.filter(c=>c.visible);
  const allIptv=useMemo(()=>iptvChannels(iptvSources),[iptvSources]);
  const everything=useMemo(()=>[...channels.filter(c=>c.visible),...allIptv],[channels,allIptv]);
- const filtered=useMemo(()=>(view==='search'?(query?everything:[]):view==='favorites'||view==='recent'?everything:visible).filter(c=>(view==='home'||view==='search'||view==='live'&&c.category==='live'&&!c.group||view==='vod'&&c.category==='vod'&&!c.group||view==='external'&&c.kind==='external'||view==='favorites'&&favorites.includes(c.id)||view==='recent'&&recent.includes(c.id))&&`${c.title} ${c.subtitle}`.toLowerCase().includes(query.toLowerCase())&&(view!=='live'||liveGroup==='all'||(liveGroup==='custom'?!getOfficialChannel(c):liveGroup==='kbs'?getOfficialChannel(c)?.broadcaster==='KBS':getSbsChannel(c)?.group===liveGroup))).sort((a,b)=>view==='recent'?recent.indexOf(a.id)-recent.indexOf(b.id):a.order-b.order),[channels,everything,view,favorites,recent,query,liveGroup]);
+ const filtered=useMemo(()=>(view==='search'?(query?everything:[]):view==='favorites'||view==='recent'?everything:visible).filter(c=>(view==='home'||view==='search'||view==='live'&&c.category==='live'&&!c.group&&!isRadio(c)||view==='radio'&&isRadio(c)||view==='vod'&&c.category==='vod'&&!c.group||view==='external'&&c.kind==='external'||view==='favorites'&&favorites.includes(c.id)||view==='recent'&&recent.includes(c.id))&&`${c.title} ${c.subtitle}`.toLowerCase().includes(query.toLowerCase())&&(view==='radio'?liveGroup==='all'||getOfficialChannel(c)?.broadcaster===liveGroup.toUpperCase():view!=='live'||liveGroup==='all'||(liveGroup==='custom'?!getOfficialChannel(c):liveGroup==='kbs'?getOfficialChannel(c)?.broadcaster==='KBS':getSbsChannel(c)?.group===liveGroup))).sort((a,b)=>view==='recent'?recent.indexOf(a.id)-recent.indexOf(b.id):a.order-b.order),[channels,everything,view,favorites,recent,query,liveGroup]);
  const [featured,setFeatured]=useState(''),[railOpen,setRailOpen]=useState(false);
  function navigate(next:View){if(next===view)return;setView(next);if(next!=='search')setQuery('');setLiveGroup('all');window.scrollTo({top:0});}
  // 메뉴에서 확인·▶: 오른쪽 내용의 첫 항목으로 초점을 옮긴다.
@@ -114,7 +116,8 @@ export default function App(){
  const pick=(ids:string[])=>ids.map(id=>everything.find(c=>c.id===id)).filter((c):c is Channel=>!!c);
  const favoriteRow=pick(favorites),recentRow=pick(recent).slice(0,12);
  const continueRow=pick([...favorites,...recent.filter(id=>!favorites.includes(id))]).slice(0,12);
- const directLiveRow=visible.filter(isDirectLive);
+ const directLiveRow=visible.filter(c=>isDirectLive(c)&&!isRadio(c));
+ const radioRow=visible.filter(isRadio);
  const myLiveRow=visible.filter(c=>c.category==='live'&&!getOfficialChannel(c)&&!c.group);
  const externalRow=visible.filter(c=>c.kind==='external');
  const sbsRow=(group:'tv'|'24tv'|'radio')=>visible.filter(c=>getSbsChannel(c)?.group===group);
@@ -154,13 +157,15 @@ export default function App(){
    <div className="gtv-rows">
     {row('이어서 보기',continueRow,'wide')}
     {row('지금 바로 LIVE',directLiveRow,'wide')}
+    {row('라디오',radioRow,'wide',()=>navigate('radio'))}
     {iptvSources.map(src=>row(src.name,allIptv.filter(c=>c.iptv?.sourceId===src.id).slice(0,16),'wide'))}
     {row('외부 TV',externalRow.slice(0,12),'wide')}
    </div>
   </>
   :<>
    <div className="gtv-page-head"><h1>{navs.find(n=>n.id===view)?.name||'최근 이용'}</h1>{view==='search'?<form className="gtv-search" role="search" onSubmit={e=>{e.preventDefault();(document.activeElement as HTMLElement)?.blur();setTimeout(()=>document.querySelector<HTMLElement>('#main-content .gtv-tile')?.focus(),50);}}><Search size={20}/><input aria-label="방송·채널 검색" placeholder="보고 싶은 방송 찾기" enterKeyHint="search" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button type="button" aria-label="검색 지우기" onClick={()=>setQuery('')}><X size={16}/></button>}</form>:<p>{`${view==='iptv'?allIptv.length:filtered.length}개의 채널`}</p>}{view==='search'&&query&&<p>{`“${query}” · ${filtered.length}개`}</p>}</div>
-   {view==='live'&&<div className="live-filters" role="group" aria-label="라이브 채널 분류">{[['all','전체'],['kbs','KBS'],['tv','SBS TV'],['24tv','24시간 TV'],['radio','라디오'],['custom','우리집 채널']].map(([id,label])=><button key={id} className={liveGroup===id?'selected':''} aria-pressed={liveGroup===id} onClick={()=>setLiveGroup(id)}>{label}</button>)}</div>}
+   {view==='live'&&<div className="live-filters" role="group" aria-label="라이브 채널 분류">{[['all','전체'],['kbs','KBS'],['tv','SBS TV'],['24tv','24시간 TV'],['custom','우리집 채널']].map(([id,label])=><button key={id} className={liveGroup===id?'selected':''} aria-pressed={liveGroup===id} onClick={()=>setLiveGroup(id)}>{label}</button>)}</div>}
+   {view==='radio'&&<div className="live-filters" role="group" aria-label="라디오 분류">{[['all','전체'],['kbs','KBS'],['sbs','SBS']].map(([id,label])=><button key={id} className={liveGroup===id?'selected':''} aria-pressed={liveGroup===id} onClick={()=>setLiveGroup(id)}>{label}</button>)}</div>}
    {view==='external'?<div className="external-page"><p className="external-note">방송사 공식 사이트로 이동해서 봐요. 리모컨 <kbd>뒤로</kbd>로 집TV에 돌아올 수 있어요.</p>{[...EXTERNAL_GROUPS,...new Set(filtered.map(externalGroup))].filter((g,i,a)=>a.indexOf(g)===i).map(g=>{const items=filtered.filter(c=>externalGroup(c)===g);return items.length?<section className="gtv-row" key={g}><div className="gtv-row-head"><h2>{g}</h2></div><div className="gtv-grid">{items.map(c=>tile(c,'wide'))}</div></section>:null;})}</div>
    :view==='iptv'?<IptvPage sources={iptvSources} render={(c,program)=>tile(c,'wide',program)}/>
    :filtered.length?<div className="gtv-grid">{filtered.map(c=>tile(c,'wide'))}</div>

@@ -12,6 +12,8 @@
 
 - **운영 배포**: Vercel 프로덕션 `dpl_Bhv2gxuthQFDf5eULLhDrKxP42zK` (브랜치 `ccr-3121bc04-cquivh`, 커밋 `bbf4f37`) → https://hometv-kappa.vercel.app 에 연결, READY. Android 앱은 이 주소를 WebView로 열기 때문에 APK 새 릴리스 없이 적용된다. `main` 에는 아직 합치지 않았으므로 main 에서 다시 배포하면 이 변경이 빠진다. main 병합 필요.
 
+- **라디오 메뉴 분리** (`src/App.tsx`): 왼쪽 메뉴에 '라디오'(실시간 TV 아래) 추가. KBS·SBS 공식 라디오 8개를 실시간 TV에서 빼서 모으고, 분류는 전체/KBS/SBS. 홈에도 '라디오' 줄 추가, '지금 바로 LIVE' 줄에서는 라디오 제외. 실시간 TV 분류에서 '라디오' 버튼 제거.
+
 ## 판단·보류한 것
 - 공중파·IPTV 30초 미리보기 제한 우회(로그인 우회 등)는 하지 않는다(유료·인증 보호조치 무력화).
 - `mytv.dothome.co.kr` 의 KBS 재송출 링크, 중국 커뮤니티의 한국 IPTV 재송출 주소는 기본 목록에 넣지 않는다. KBS는 기존 공식 라이브 사용.
