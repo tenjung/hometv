@@ -29,8 +29,8 @@ function artMark(channel:Channel){
   return <><span className="logo-backdrop" aria-hidden="true"><img src={channel.logo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={hide}/></span><img className="channel-logo" src={channel.logo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={hide}/><em className="logo-group">{channel.iptv?.group||'IPTV'}</em></>;}
  if(channel.art==='solo')return <><small>나는</small><strong>SOLO</strong><em>그들의 사랑은 계속된다</em></>;
  if(channel.art==='sample')return <><small>TAKE A LITTLE BREAK</small><strong>A little<br/>bloom.</strong><em>플레이어 체험</em></>;
- const word=sbs?sbs.name:channel.art==='sbs'?'SBS':channel.art==='kbs'?'KBS':channel.art==='ebs'?'EBS':channel.art==='drama'?'RE:PLAY':channel.kind==='external'&&channel.art==='custom'?channel.title.split(' ')[0]:<Tv size={46}/>;
- const caption=sbs?(sbs.group==='radio'?'LIVE RADIO':sbs.group==='24tv'?'24 HOURS':'LIVE TV'):channel.art==='drama'?'다시 만나는 이야기':channel.kind==='external'?'ON AIR':'HOME CINEMA';
+ const word=sbs?sbs.name:channel.art==='sbs'?'SBS':channel.art==='kbs'?'KBS':channel.art==='ebs'?'EBS':channel.art==='mbc'?'MBC':channel.art==='drama'?'RE:PLAY':channel.kind==='external'&&channel.art==='custom'?channel.title.split(' ')[0]:<Tv size={46}/>;
+ const caption=sbs?(sbs.group==='radio'?'LIVE RADIO':sbs.group==='24tv'?'24 HOURS':'LIVE TV'):channel.art==='mbc'?'LIVE TV':channel.art==='drama'?'다시 만나는 이야기':channel.kind==='external'?'ON AIR':'HOME CINEMA';
  return <><span className={'channel-wordmark '+(sbs?'sbs-wordmark':'')}>{word}</span><em>{caption}</em></>;
 }
 

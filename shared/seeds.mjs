@@ -8,6 +8,8 @@ export const seeds = [
  ...sbsSeeds,
  ...kbsSeeds.map(c=>({...c,since:2})),
  ...externalSeeds.map(c=>({...c,since:3})),
+ // 춘천MBC 자체 공개 스트림(방송사 운영). MBC 본사 편성을 대부분 동시 송출하고 지역 뉴스 시간만 다르다.
+ {id:'chmbc-live',title:'춘천 MBC',subtitle:'MBC 공중파 · 강원 지역 방송',category:'live',kind:'hls',url:'https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8',originalUrl:'https://www.chmbc.co.kr/',art:'mbc',badge:'LIVE',verified:false,visible:true,order:2,since:4,description:'춘천MBC가 직접 공개한 실시간 스트림입니다. MBC 본사 드라마·예능·뉴스를 대부분 그대로 방송하고, 지역 뉴스 시간에는 강원 지역 방송이 나옵니다.',alternatives:[]},
  {id:'kbs',title:'KBS 온에어',subtitle:'뉴스부터 드라마, 예능까지',category:'live',kind:'external',url:'https://onair.kbs.co.kr/',originalUrl:'https://onair.kbs.co.kr/',art:'kbs',badge:'공식',verified:false,visible:true,order:3,description:'KBS 공식 온에어 페이지로 연결합니다. 원본 사이트의 제공 조건과 지역 제한이 적용됩니다.',alternatives:[]},
  {id:'ebs',title:'EBS 온에어',subtitle:'온 가족이 함께 보는 시간',category:'live',kind:'external',url:'https://www.ebs.co.kr/onair',originalUrl:'https://www.ebs.co.kr/onair',art:'ebs',badge:'공식',verified:false,visible:true,order:4,description:'EBS 공식 온에어 페이지입니다. 교육·교양·어린이 프로그램을 원본 사이트에서 찾아보세요.',alternatives:[]},
  {id:'kbs-vod',title:'KBS 다시보기',subtitle:'보고 싶던 방송을 찾아서',category:'vod',kind:'external',url:'https://vod.kbs.co.kr/',originalUrl:'https://vod.kbs.co.kr/',art:'drama',badge:'공식',verified:false,visible:true,order:5,description:'KBS 공식 다시보기 페이지입니다. 무료 제공 범위와 로그인 여부는 원본 사이트에서 확인하세요.',alternatives:[]},
