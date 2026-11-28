@@ -10,7 +10,7 @@
 
 - **iptv-org 대한민국 목록 기본 추가**: `https://iptv-org.github.io/iptv/countries/kr.m3u` 를 기본 IPTV 소스 v2로 등록(`DEFAULT_IPTV`). 기존 DB(v1까지 완료)도 다음 가족 목록 조회 때 한 번 추가되고, 삭제하면 다시 생기지 않는다. 작업 환경에서는 이 주소가 프록시에 막혀 실제 채널 수는 배포 서버에서 확인해야 한다.
 
-- **운영 배포**: Vercel 프로덕션 `dpl_Bhv2gxuthQFDf5eULLhDrKxP42zK` (브랜치 `ccr-3121bc04-cquivh`, 커밋 `bbf4f37`) → https://hometv-kappa.vercel.app 에 연결, READY. Android 앱은 이 주소를 WebView로 열기 때문에 APK 새 릴리스 없이 적용된다. `main` 에는 아직 합치지 않았으므로 main 에서 다시 배포하면 이 변경이 빠진다. main 병합 필요.
+- **운영 배포**: Vercel 프로덕션 `dpl_Bhv2gxuthQFDf5eULLhDrKxP42zK` (브랜치 `ccr-3121bc04-cquivh`, 커밋 `bbf4f37`) → https://hometv-kappa.vercel.app 에 연결, READY. Android 앱은 이 주소를 WebView로 열기 때문에 APK 새 릴리스 없이 적용된다. 이후 `main` 에 fast-forward 로 합쳤고(2026-11-28), 운영 배포는 `main` 기준으로 돌아갔다.
 
 - **라디오 메뉴 분리** (`src/App.tsx`): 왼쪽 메뉴에 '라디오'(실시간 TV 아래) 추가. KBS·SBS 공식 라디오 8개를 실시간 TV에서 빼서 모으고, 분류는 전체/KBS/SBS. 홈에도 '라디오' 줄 추가, '지금 바로 LIVE' 줄에서는 라디오 제외. 실시간 TV 분류에서 '라디오' 버튼 제거.
 
