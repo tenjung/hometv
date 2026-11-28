@@ -226,8 +226,16 @@
 @media(max-width:700px){.player-hints{gap:12px;font-size:.75rem;flex-wrap:wrap;padding:10px 16px 14px}.player-hints span{display:none}.player-controls{bottom:58px;padding:0 16px}.player-top{padding:16px 16px 60px}.info-panel{flex-direction:column;padding:20px 16px 60px;max-height:100%;overflow-y:auto}.info-qr{display:none}.channel-strip{padding:8px 16px 10px}.channel-panel-head{padding:0 16px 10px}.panel-hint{display:none}.strip-card{flex-basis:170px;min-height:104px}}
 
 /* ── IPTV ── */
-.channel-logo{max-width:62%;max-height:52%;object-fit:contain;filter:drop-shadow(0 4px 14px #0008)}
-.gtv-art:has(.channel-logo){background:radial-gradient(ellipse at 50% 40%,#ffffff14,transparent 70%),linear-gradient(135deg,#20232f,#323748)}
+.gtv-art:has(.channel-logo),.gtv-hero-art:has(.channel-logo){background:linear-gradient(135deg,#20232f,#323748)}
+/* B안: 흐린 배경 + 큰 로고 */
+.gtv-tile .gtv-art .art-type:has(.channel-logo){inset:0;overflow:hidden;border-radius:inherit;transform:none}
+.logo-backdrop{position:absolute;inset:-24px;z-index:0}
+.logo-backdrop img{width:100%;height:100%;object-fit:cover;filter:blur(20px) brightness(.62) saturate(1.35)}
+.channel-logo{position:relative;z-index:1;height:80%;max-width:86%;object-fit:contain;border-radius:8px;box-shadow:0 6px 20px #0008}
+.art-type>em.logo-group{position:absolute;z-index:1;right:8px;bottom:8px;margin:0;padding:2px 7px;border-radius:5px;background:#0000008c;color:#e9eaf0;font-size:.62rem;letter-spacing:0}
+.logo-failed .logo-backdrop,.logo-failed .channel-logo{display:none}
+.logo-failed>em.logo-group{position:static;background:none;font-size:.8rem}
+.gtv-art>.gtv-chip,.gtv-art>[class*=chip]{z-index:2}
 .program-line{display:flex;flex-direction:column;gap:5px;min-width:0;width:100%}
 .program-title{font-size:.78rem;color:#c7cad4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .program-time{font-size:.7rem;color:#8f93a0}

@@ -24,7 +24,9 @@ function PinForm({admin=false,onSuccess,onCancel}:{admin?:boolean;onSuccess:(s:S
 // 채널 카드의 로고/문구. 홈 타일과 상단 배너에서 함께 쓴다.
 function artMark(channel:Channel){
  const sbs=getOfficialChannel(channel);
- if(channel.logo)return <><img className="channel-logo" src={channel.logo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display='none';}}/><em>{channel.iptv?.group||'IPTV'}</em></>;
+ // 로고 채널: 같은 이미지를 흐리게 깔아 카드를 채널 색으로 채우고, 원본 로고는 크게 가운데에 둔다.
+ if(channel.logo){const hide=(e:React.SyntheticEvent<HTMLImageElement>)=>{e.currentTarget.closest('.art-type')?.classList.add('logo-failed');};
+  return <><span className="logo-backdrop" aria-hidden="true"><img src={channel.logo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={hide}/></span><img className="channel-logo" src={channel.logo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={hide}/><em className="logo-group">{channel.iptv?.group||'IPTV'}</em></>;}
  if(channel.art==='solo')return <><small>나는</small><strong>SOLO</strong><em>그들의 사랑은 계속된다</em></>;
  if(channel.art==='sample')return <><small>TAKE A LITTLE BREAK</small><strong>A little<br/>bloom.</strong><em>플레이어 체험</em></>;
  const word=sbs?sbs.name:channel.art==='sbs'?'SBS':channel.art==='kbs'?'KBS':channel.art==='ebs'?'EBS':channel.art==='drama'?'RE:PLAY':channel.kind==='external'&&channel.art==='custom'?channel.title.split(' ')[0]:<Tv size={46}/>;
