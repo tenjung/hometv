@@ -65,6 +65,9 @@ async function loadChannels(sourceId,source){
   else{const urls=xtreamUrls(source);text=await fetchText(urls.m3u,{maxBytes:30e6});epg=epg||urls.epg;}
   const parsed=parseM3U(text,{limit:MAX_CHANNELS});
   if(!parsed.channels.length)fail('재생 목록에서 채널을 찾지 못했어요. 형식을 확인해 주세요.',422);
+  // 소스별 제외 주소(무단 재송출 사이트 등). 해당 호스트의 채널은 목록에 넣지 않는다.
+  const excluded=new Set((source.excludeHosts||[]).map(h=>String(h).toLowerCase()));
+  if(excluded.size)parsed.channels=parsed.channels.filter(c=>{try{return !excluded.has(new URL(c.url).hostname.toLowerCase());}catch{return false;}});
   const seen=new Map();
   const channels=parsed.channels.map(c=>{let id=iptvChannelId(sourceId,c);const n=(seen.get(id)||0)+1;seen.set(id,n);if(n>1)id+='-'+n;return {id,name:c.name,url:c.url,logo:c.logo,group:c.group,tvgId:c.tvgId};});
   return {channels,epgUrl:epg||parsed.epgUrl||''};
@@ -147,9 +150,12 @@ async function sync(db,meta,{epg=true}={}){
 // 기본 IPTV 소스: 버전마다 한 번씩 넣는다. 성공한 뒤에는 다시 넣지 않아서 관리자가 지우면 그대로 지워진다.
 // v1 삼성 TV 플러스(대한민국), v2 iptv-org 대한민국 공개 목록(github.com/iptv-org/iptv).
 export const IPTV_ORG_KR='https://iptv-org.github.io/iptv/countries/kr.m3u';
+export const DEUKTV='https://flyingdeuk.github.io/kodi/deuktv.m3u';
 const DEFAULT_IPTV=[
   {version:1,match:m=>m.type==='samsung'&&m.source?.region==='kr',source:{name:'삼성 TV 플러스',type:'samsung',region:'kr',epgUrl:''}},
-  {version:2,match:m=>m.type==='m3u'&&m.source?.url===IPTV_ORG_KR,source:{name:'iptv-org 대한민국',type:'m3u',url:IPTV_ORG_KR,epgUrl:''}}
+  {version:2,match:m=>m.type==='m3u'&&m.source?.url===IPTV_ORG_KR,source:{name:'iptv-org 대한민국',type:'m3u',url:IPTV_ORG_KR,epgUrl:''}},
+  // v3 deuktv(지역 방송사 자체 스트림 위주). mytv.dothome.co.kr 의 KBS·MBC·케이블 재송출 링크는 뺀다.
+  {version:3,match:m=>m.type==='m3u'&&m.source?.url===DEUKTV,source:{name:'deuktv 지역방송',type:'m3u',url:DEUKTV,epgUrl:'',excludeHosts:['mytv.dothome.co.kr']}}
 ];
 const DEFAULT_IPTV_VERSION=DEFAULT_IPTV.at(-1).version;
 async function seedDefaults(db){

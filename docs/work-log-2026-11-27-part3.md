@@ -20,6 +20,9 @@
 
 - **SBS 60초 미리보기 → SBS 로그인 연결** (`src/lib.tsx` `isSbsLogin`, `src/App.tsx`): 미리보기 채널(SBS·funE·Sports·Golf·Life·24시간 TV 등)을 누르면 60초 미리보기 대신 SBS 공식 라이브 페이지(`sbs.co.kr/live/…`)를 연다. 안드로이드 앱(WebView)에서는 SBS에 한 번 로그인하면 유지되어 그 화면에서 전체 시청, 뒤로 버튼으로 집TV 복귀. 표시는 'SBS 로그인' 꼬리표와 '로그인 후 전체 시청'. 채널 띠에서 넘어갈 때도 같은 방식. SBS 계정·이용권 조건은 SBS를 따른다(로그인 정보를 집TV가 다루지 않음).
 
+- **deuktv 재생 목록 기본 추가** (`worker/iptv.mjs` 기본 소스 v3): `https://flyingdeuk.github.io/kodi/deuktv.m3u` (64채널, 지역 MBC·SBS 계열·EBS·KTV 등 방송사 자체 스트림 위주). 이 중 `mytv.dothome.co.kr` 재송출 9개(KBS 1·2TV, KBS Drama·Joy, MBC Drama 등)는 소스별 `excludeHosts` 로 제외. iptv-org 대한민국은 v2로 이미 등록됨.
+- **리모컨 뒤로가기 → 왼쪽 메뉴** (`src/App.tsx`): 오른쪽 목록에 초점이 들어가면 히스토리 한 칸(`#browse`)을 쌓고, 뒤로가기로 빠지면 왼쪽 메뉴의 현재 항목으로 초점 이동. 메뉴에서 한 번 더 뒤로 하면 앱 메뉴(기존 동작). 시청 화면에서는 뒤로 → 목록 → 메뉴 순서. 앱(APK) 수정 없이 웹만으로 동작.
+
 ## 판단·보류한 것
 - 공중파·IPTV 30초 미리보기 제한 우회(로그인 우회 등)는 하지 않는다(유료·인증 보호조치 무력화).
 - `mytv.dothome.co.kr` 의 KBS 재송출 링크, 중국 커뮤니티의 한국 IPTV 재송출 주소는 기본 목록에 넣지 않는다. KBS는 기존 공식 라이브 사용.

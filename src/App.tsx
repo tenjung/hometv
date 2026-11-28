@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {ArrowUpRight,Check,ChevronLeft,ChevronRight,Clock3,ExternalLink,Heart,Home,LayoutGrid,LoaderCircle,LockKeyhole,LogOut,Monitor,Play,Plus,Radio,Search,Settings,ShieldCheck,Signal,SlidersHorizontal,Sparkles,Tv,Wifi,X} from 'lucide-react';
 import {api,Dialog,external,isDirectLive,isSbsLogin,playBadge,useRemoteNavigation,useStored} from './lib';
 import type {Channel,Session,View} from './types';
@@ -102,7 +102,13 @@ export default function App(){
  useEffect(()=>{const tick=()=>{if(document.visibilityState==='visible'&&session?.authenticated)void load();};window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);return()=>{window.removeEventListener('focus',tick);document.removeEventListener('visibilitychange',tick);};},[session?.authenticated]);
  useEffect(()=>{document.documentElement.classList.toggle('tv-mode',tv);},[tv]);
  useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(''),3500);return()=>clearTimeout(timer);},[toast]);
- useEffect(()=>{const pop=()=>{if(location.hash==='#watch'||location.hash==='#watch-panel')return;setLayer(null);};window.addEventListener('popstate',pop);const back=(e:KeyboardEvent)=>{if(['BrowserBack','GoBack'].includes(e.key)&&layer){e.preventDefault();if(document.fullscreenElement)void document.exitFullscreen().catch(()=>{});else history.back();}};window.addEventListener('keydown',back);return()=>{window.removeEventListener('popstate',pop);window.removeEventListener('keydown',back);};},[layer]);
+ // 리모컨 뒤로가기: 목록(오른쪽 내용)에 초점이 들어가면 히스토리를 한 칸('#browse') 쌓아 두고,
+ // 뒤로가기로 그 칸이 빠지면 왼쪽 메뉴로 초점을 옮긴다. 메뉴에서 한 번 더 뒤로 하면 앱/브라우저 뒤로가기.
+ const browseEntry=useRef(false);
+ function enterBrowse(){if(browseEntry.current||layer)return;browseEntry.current=true;history.pushState({hometv:true,browse:true},'','#browse');}
+ function leaveBrowse(){if(browseEntry.current&&history.state?.browse&&!layer){browseEntry.current=false;history.back();}}
+ function focusRail(){const item=document.querySelector<HTMLElement>('.rail .rail-item.active')||document.querySelector<HTMLElement>('.rail .rail-item');item?.focus();}
+ useEffect(()=>{const pop=()=>{if(browseEntry.current&&!history.state?.browse){browseEntry.current=false;setLayer(null);setTimeout(focusRail,0);return;}if(location.hash==='#watch'||location.hash==='#watch-panel')return;setLayer(null);};window.addEventListener('popstate',pop);const back=(e:KeyboardEvent)=>{if(['BrowserBack','GoBack'].includes(e.key)&&layer){e.preventDefault();if(document.fullscreenElement)void document.exitFullscreen().catch(()=>{});else history.back();}};window.addEventListener('keydown',back);return()=>{window.removeEventListener('popstate',pop);window.removeEventListener('keydown',back);};},[layer]);
  function open(next:NonNullable<Layer>){history.pushState({hometv:true},'',`#${next.type}`);setLayer(next);}
  function close(){if(history.state?.hometv)history.back();else setLayer(null);}
  function favorite(id:string){setFavorites(list=>list.includes(id)?list.filter(x=>x!==id):[...list,id]);}
@@ -143,7 +149,7 @@ export default function App(){
  if(!session)return <div className="boot"><Brand/>{initialError?<><p role="alert">{initialError}</p><button className="secondary" onClick={()=>location.reload()}>다시 불러오기</button></>:<LoaderCircle className="spin" size={28}/>}</div>;
  if(!session.authenticated)return <main className="login-page"><section className="login-story"><Brand/><div className="login-message"><span className="eyebrow">YOUR VERY OWN SCREEN</span><h2>오늘도, 집이<br/>가장 좋은<br/><span>영화관.</span></h2><p>좋아하는 방송과 이야기들을 한곳에.<br/>우리 가족만의 TV가 시작됩니다.</p><div className="login-perks"><span><Tv size={16}/>안드로이드 TV</span><span><Monitor size={16}/>PC</span><span><Heart size={16}/>우리 가족</span></div></div><div className="login-caption">조금 더 편안한 우리집의 저녁 · 집TV</div></section><section className="login-entry"><PinForm onSuccess={setSession}/><button className="login-admin" onClick={()=>open({type:'admin'})}><Settings size={15}/>관리자로 접속</button></section>{layer?.type==='admin'&&<Dialog title="관리자 접속" onClose={close}><PinForm admin onSuccess={s=>{setSession(s);close();}} onCancel={close}/></Dialog>}</main>;
  return <div className={'gtv-shell rail-layout'+(railOpen?' rail-open':'')}>
- <nav className="rail" aria-label="주 메뉴" onFocus={()=>setRailOpen(true)} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setRailOpen(false);}} onMouseEnter={()=>setRailOpen(true)} onMouseLeave={()=>{if(!(document.activeElement as HTMLElement)?.closest('.rail'))setRailOpen(false);}} onKeyDown={e=>{if(e.key==='ArrowRight'||e.key==='Enter'){const t=(e.target as HTMLElement).dataset.view;if(t==='settings')return;e.preventDefault();e.stopPropagation();enterContent();}}}>
+ <nav className="rail" aria-label="주 메뉴" onFocus={()=>{setRailOpen(true);leaveBrowse();}} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setRailOpen(false);}} onMouseEnter={()=>setRailOpen(true)} onMouseLeave={()=>{if(!(document.activeElement as HTMLElement)?.closest('.rail'))setRailOpen(false);}} onKeyDown={e=>{if(e.key==='ArrowRight'||e.key==='Enter'){const t=(e.target as HTMLElement).dataset.view;if(t==='settings')return;e.preventDefault();e.stopPropagation();enterContent();}}}>
   <div className="rail-brand"><Brand/></div>
   {navs.filter(n=>n.id!=='iptv'||iptvSources.length>0).map(({id,name,icon:Icon})=><button key={id} data-view={id} className={'rail-item'+(view===id?' active':'')} aria-current={view===id?'page':undefined} onFocus={()=>navigate(id)} onClick={()=>{navigate(id);enterContent();}}><Icon size={24}/><span>{name}</span></button>)}
   <span className="rail-gap"/>
@@ -151,7 +157,7 @@ export default function App(){
  </nav>
  <div className="rail-dim" aria-hidden="true"/>
  <div className="top-status">{session.admin&&<button className="gtv-icon" onClick={logout} aria-label="관리자 접속 종료" title="관리자 접속 종료"><LogOut size={20}/></button>}<time>{time}</time></div>
- <main className="gtv-main" id="main-content">
+ <main className="gtv-main" id="main-content" onFocus={enterBrowse}>
   {catalogError?<div className="empty-state"><Wifi/><h2>목록을 불러오지 못했어요</h2><p role="alert">{catalogError}</p><button className="secondary" onClick={load}>다시 시도</button></div>
   :loading&&channels.length===0?<div className="empty-state"><LoaderCircle className="spin"/><p>우리집 TV를 준비하고 있어요.</p></div>
   :isHome?<>
